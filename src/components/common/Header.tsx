@@ -75,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
                   aria-current={isActive ? 'page' : undefined}
                   className={`flex items-center gap-2 border-b-[3px] px-3 text-sm font-semibold transition-colors ${
                     isActive
-                      ? 'border-ink bg-accent text-accent-ink'
+                      ? `border-ink text-explore-ink ${tab.id === 'pipeline' ? 'bg-accent' : 'bg-explore'}`
                       : 'border-transparent text-muted hover:bg-highlight hover:text-ink'
                   }`}
                 >
@@ -165,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
                 aria-current={isActive ? 'page' : undefined}
                 className={`flex min-h-11 items-center justify-center gap-1.5 border-b-[3px] text-xs font-semibold transition-colors ${
                   isActive
-                    ? 'border-ink bg-accent text-accent-ink'
+                    ? `border-ink text-explore-ink ${tab.id === 'pipeline' ? 'bg-accent' : 'bg-explore'}`
                     : 'border-transparent text-muted hover:bg-highlight hover:text-ink'
                 }`}
               >

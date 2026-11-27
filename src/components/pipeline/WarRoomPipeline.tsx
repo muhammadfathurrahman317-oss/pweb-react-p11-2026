@@ -189,7 +189,7 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
           )}
         </div>
       ) : (
-        <div className="border-t-2 border-border bg-surface">
+        <div className="space-y-2 border-t-2 border-border bg-paper pt-2">
           {filteredApplications.map((app, index) => {
             const match = calculateSkillMatch(kaptenSkills, app.requiredSkills);
             const hasGhostingRisk = isGhostingRisk(app);
@@ -208,8 +208,8 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
             return (
               <article
                 key={app.id}
-                className={`border-x-2 border-b-2 border-border px-4 py-5 transition-colors hover:bg-highlight sm:px-6 ${
-                  hasGhostingRisk ? 'bg-warning/10' : ''
+                className={`mr-1 border-2 border-border px-4 py-5 transition-[background-color,box-shadow] hover:bg-highlight hover:shadow-[4px_4px_0_var(--app-ink)] sm:mr-2 sm:px-6 ${
+                  hasGhostingRisk ? 'neo-row bg-attention/35' : 'bg-surface'
                 }`}
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -223,7 +223,7 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
                       </span>
                       <StatusStamp status={app.status} />
                       {hasGhostingRisk && (
-                        <span className="inline-flex items-center gap-1 border border-warning/60 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-warning">
+                        <span className="inline-flex items-center gap-1 border-2 border-border bg-attention px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-attention-ink">
                           <GhostIcon className="h-3 w-3" />
                           Rawan · {daysInactive} hari
                         </span>

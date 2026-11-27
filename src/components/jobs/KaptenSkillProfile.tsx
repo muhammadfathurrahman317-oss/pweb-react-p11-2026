@@ -1,7 +1,7 @@
 import React, { useId, useState } from 'react';
 import { JobDataSource } from '../../services/jobService';
 import { Plus, X } from '../common/Icons';
-import { buttonPrimary, field, fieldLabel, kicker } from '../common/ui';
+import { buttonPrimary, field, fieldLabel } from '../common/ui';
 
 interface KaptenSkillProfileProps {
   skills: string[];
@@ -45,20 +45,20 @@ export const KaptenSkillProfile: React.FC<KaptenSkillProfileProps> = ({
   };
 
   return (
-    <section className="overflow-hidden border-2 border-border bg-surface">
-      <div className="flex items-center justify-between gap-3 px-4 py-3">
+    <section className="neo-panel mr-2 overflow-hidden border-2 border-border bg-surface">
+      <div className="flex items-center justify-between gap-3 border-b-2 border-border bg-explore px-4 py-3 text-explore-ink">
         <div className="min-w-0">
-          <p className={kicker}>Indeks skill</p>
-          <h3 className="mt-0.5 font-display text-lg leading-tight text-ink">Profil skill</h3>
+          <p className="font-mono text-[10px] font-semibold uppercase text-explore-ink">Indeks skill</p>
+          <h3 className="mt-0.5 font-display text-lg leading-tight text-explore-ink">Profil skill</h3>
         </div>
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[11px] text-muted">{skills.length} skill</span>
+          <span className="font-mono text-[11px] text-explore-ink">{skills.length} skill</span>
           <button
             type="button"
             onClick={() => setIsExpanded((prev) => !prev)}
             aria-expanded={isExpanded}
             aria-controls={bodyId}
-            className="min-h-11 border border-border px-3 text-xs font-medium text-ink transition-colors hover:bg-highlight lg:hidden"
+            className="min-h-11 border-2 border-border bg-surface px-3 text-xs font-semibold text-ink transition-colors hover:bg-highlight lg:hidden"
           >
             {isExpanded ? 'Tutup' : 'Kelola'}
           </button>
@@ -67,7 +67,7 @@ export const KaptenSkillProfile: React.FC<KaptenSkillProfileProps> = ({
 
       <div
         id={bodyId}
-        className={`${isExpanded ? 'block' : 'hidden'} border-t-2 border-border px-4 py-4 lg:block`}
+        className={`${isExpanded ? 'block' : 'hidden'} px-4 py-4 lg:block`}
       >
         <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
           <div className="min-w-0">

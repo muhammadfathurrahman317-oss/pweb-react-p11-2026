@@ -26,20 +26,20 @@ interface OfferSheetProps {
 
 const OfferSheet: React.FC<OfferSheetProps> = ({ offer, result, side, isRecommended }) => {
   return (
-    <div className={`flex flex-col border-2 border-border bg-surface ${isRecommended ? 'neo-panel' : ''}`}>
-      <div className={`h-1 w-full ${isRecommended ? 'bg-accent' : 'bg-ink/20'}`} />
+    <div className={`neo-panel mr-2 flex min-w-0 flex-col border-2 border-border bg-surface ${isRecommended ? 'border-b-[5px]' : ''}`}>
+      <div className={`h-1.5 w-full ${isRecommended ? 'bg-explore' : 'bg-ink/20'}`} />
 
-      <div className="flex flex-1 flex-col p-5 sm:p-6">
+      <div className="flex min-w-0 flex-1 flex-col p-5 sm:p-6">
         <div className="flex items-start justify-between gap-3 border-b border-rule pb-4">
           <div className="min-w-0">
             <p className={kicker}>Offer {side}</p>
-            <h3 className="mt-1 font-display text-2xl leading-tight text-ink">
+            <h3 className="mt-1 break-words font-display text-2xl leading-tight text-ink">
               {offer.company}
             </h3>
             <p className="mt-0.5 text-xs leading-snug text-muted">{offer.role}</p>
           </div>
           {isRecommended && (
-            <span className="-rotate-2 border border-accent px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">
+            <span className="-rotate-2 border-2 border-border bg-explore px-2 py-1 font-mono text-[10px] font-bold uppercase text-explore-ink">
               Rekomendasi
             </span>
           )}
@@ -86,9 +86,7 @@ const OfferSheet: React.FC<OfferSheetProps> = ({ offer, result, side, isRecommen
               Total skor
             </span>
             <span
-              className={`font-display text-4xl leading-none ${
-                isRecommended ? 'text-accent' : 'text-ink'
-              }`}
+              className="font-display text-4xl font-extrabold leading-none text-ink"
             >
               {result.totalScore.toFixed(1)}
               <span className="ml-1 font-mono text-xs text-muted">/100</span>
@@ -103,7 +101,7 @@ const OfferSheet: React.FC<OfferSheetProps> = ({ offer, result, side, isRecommen
             aria-valuenow={Math.round(result.totalScore)}
           >
             <div
-              className={`h-0.5 ${isRecommended ? 'bg-accent' : 'bg-ink/40'}`}
+              className={`h-0.5 ${isRecommended ? 'bg-explore' : 'bg-ink/40'}`}
               style={{ width: `${Math.min(100, Math.max(0, result.totalScore))}%` }}
             />
           </div>
@@ -240,7 +238,7 @@ export const OfferComparatorView: React.FC<OfferComparatorViewProps> = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-7 pb-2 md:grid-cols-2">
         <OfferSheet
           offer={offerA}
           result={resultA}

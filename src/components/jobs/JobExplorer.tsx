@@ -287,15 +287,15 @@ export const JobExplorer: React.FC<JobExplorerProps> = ({
             <span>skill tanpa tanda belum kamu kuasai</span>
           </div>
 
-          <div className="border-t border-ink/25">
+          <div className="space-y-3 border-t-2 border-border pt-3">
             {filteredAndSortedJobs.map(({ job, matchResult, isApplied }) => (
               <article
                 key={job.id}
-                className="border-b border-rule px-1 py-5 transition-colors hover:bg-highlight/35"
+                className="mr-2 border-2 border-border bg-surface px-4 py-5 transition-[background-color,box-shadow] hover:bg-highlight hover:shadow-[4px_4px_0_var(--app-ink)] sm:px-5"
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 gap-3">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-rule font-mono text-[11px] text-muted">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center border-2 border-border bg-explore font-mono text-[11px] font-bold text-explore-ink">
                       {job.company_name.substring(0, 2).toUpperCase()}
                     </span>
 
@@ -348,7 +348,7 @@ export const JobExplorer: React.FC<JobExplorerProps> = ({
                       disabled={isApplied}
                       onClick={() => onSaveToWishlist(job)}
                       aria-label={isApplied ? 'Sudah Dilamar' : `Simpan ${job.title} di ${job.company_name} ke wishlist`}
-                      className={`${buttonSecondary} min-h-11 px-3 text-xs hover:border-accent hover:text-accent`}
+                      className={`${buttonSecondary} min-h-11 px-3 text-xs hover:bg-explore hover:text-explore-ink`}
                     >
                       {isApplied ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
                       {isApplied ? 'Sudah Dilamar' : 'Simpan ke Wishlist'}

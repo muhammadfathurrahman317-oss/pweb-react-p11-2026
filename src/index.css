@@ -17,6 +17,10 @@
   --color-border: var(--app-border);
   --color-accent: var(--app-accent);
   --color-accent-ink: var(--app-accent-ink);
+  --color-explore: var(--app-explore);
+  --color-explore-ink: var(--app-explore-ink);
+  --color-attention: var(--app-attention);
+  --color-attention-ink: var(--app-attention-ink);
   --color-success: var(--app-success);
   --color-warning: var(--app-warning);
   --color-danger: var(--app-danger);
@@ -34,6 +38,10 @@
   --app-border: #172126;
   --app-accent: #f5d547;
   --app-accent-ink: #172126;
+  --app-explore: #7ac9e8;
+  --app-explore-ink: #172126;
+  --app-attention: #f3a58f;
+  --app-attention-ink: #172126;
   --app-success: #175c3d;
   --app-warning: #765000;
   --app-danger: #a32835;
@@ -50,6 +58,10 @@
   --app-border: #d8e3de;
   --app-accent: #efd55d;
   --app-accent-ink: #172126;
+  --app-explore: #8dcfe8;
+  --app-explore-ink: #172126;
+  --app-attention: #f4a895;
+  --app-attention-ink: #172126;
   --app-success: #94dab0;
   --app-warning: #efc466;
   --app-danger: #ff9aa1;
@@ -103,23 +115,37 @@
   background: var(--app-muted);
 }
 
-/* Controls carry a compact offset edge; data rows stay flat for scanability. */
+/* Offset edges distinguish actions and priority panels from flat data rows. */
 .neo-action {
-  box-shadow: 3px 3px 0 var(--app-ink);
+  box-shadow: 5px 5px 0 var(--app-ink);
 }
 
 .neo-action:hover:not(:disabled) {
-  box-shadow: 1px 1px 0 var(--app-ink);
-  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--app-ink);
+  transform: translate(3px, 3px);
 }
 
 .neo-action:active:not(:disabled) {
   box-shadow: none;
-  transform: translate(3px, 3px);
+  transform: translate(5px, 5px);
 }
 
 .neo-panel {
-  box-shadow: 5px 5px 0 var(--app-ink);
+  box-shadow: 7px 7px 0 var(--app-ink);
+}
+
+.neo-row {
+  box-shadow: 4px 4px 0 var(--app-ink);
+}
+
+/* Keep the offset inside the panel width on narrow screens. */
+@media (max-width: 639px) {
+  .neo-panel {
+    box-shadow: 4px 4px 0 var(--app-ink);
+  }
+  .neo-row {
+    box-shadow: 3px 3px 0 var(--app-ink);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
