@@ -1,11 +1,12 @@
 import React from 'react';
-import { Briefcase, BarChart3, Clock, GhostIcon, Award } from '../common/Icons';
+import { SectionHeading } from '../common/SectionHeading';
 
 interface StatCardsProps {
   totalApplications: number;
   activeInPipeline: number;
   responseRate: number;
-  processedCount: number;
+  submittedCount: number;
+  responseCount: number;
   interviewRate: number;
   interviewCount: number;
   ghostingRiskCount: number;
@@ -16,83 +17,90 @@ export const StatCards: React.FC<StatCardsProps> = ({
   totalApplications,
   activeInPipeline,
   responseRate,
-  processedCount,
+  submittedCount,
+  responseCount,
   interviewRate,
   interviewCount,
   ghostingRiskCount,
   offerCount,
 }) => {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-6">
-      {/* 1. Total Lamaran */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-blue-300 dark:hover:border-blue-700 transition-all">
-        <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-          <span className="text-xs uppercase tracking-wider font-semibold">Total Lamaran</span>
-          <Briefcase className="w-4 h-4 text-blue-500" />
-        </div>
-        <div className="text-2xl font-black text-slate-900 dark:text-white">
-          {totalApplications}
-        </div>
-        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          {activeInPipeline} aktif di pipeline
-        </div>
-      </div>
+    <section className="space-y-4">
+      <SectionHeading
+        index="01"
+        title="Ringkasan"
+        description="Hitungan langsung dari buku lamaranmu. Tidak ada angka yang dikira-kira."
+      />
 
-      {/* 2. Response Rate */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-indigo-300 dark:hover:border-indigo-700 transition-all">
-        <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-          <span className="text-xs uppercase tracking-wider font-semibold">Response Rate</span>
-          <BarChart3 className="w-4 h-4 text-indigo-500" />
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-rule bg-rule lg:grid-cols-5">
+        <div className="col-span-2 bg-surface p-4 sm:p-5 lg:col-span-1">
+          <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
+            Total lamaran
+          </div>
+          <div className="mt-3 font-display text-4xl leading-none text-ink sm:text-5xl">
+            {totalApplications}
+          </div>
+          <div className="mt-3 text-[11px] leading-snug text-muted">
+            {activeInPipeline} masih aktif di pipeline
+          </div>
         </div>
-        <div className="text-2xl font-black text-slate-900 dark:text-white">
-          {responseRate}%
-        </div>
-        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          {processedCount} dari {totalApplications} diproses
-        </div>
-      </div>
 
-      {/* 3. Interview Rate */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-purple-300 dark:hover:border-purple-700 transition-all">
-        <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-          <span className="text-xs uppercase tracking-wider font-semibold">Interview Rate</span>
-          <Clock className="w-4 h-4 text-purple-500" />
+        <div className="bg-surface p-4 sm:p-5">
+          <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
+            Response rate
+          </div>
+          <div className="mt-3 font-mono text-3xl leading-none text-ink">
+            {responseRate}%
+          </div>
+          <div className="mt-3 text-[11px] leading-snug text-muted">
+            {responseCount} dari {submittedCount} lamaran dijawab
+          </div>
         </div>
-        <div className="text-2xl font-black text-slate-900 dark:text-white">
-          {interviewRate}%
-        </div>
-        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          {interviewCount} masuk wawancara
-        </div>
-      </div>
 
-      {/* 4. Rawan Ghosting */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-amber-300 dark:hover:border-amber-700 transition-all">
-        <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-          <span className="text-xs uppercase tracking-wider font-semibold">Rawan Ghosting</span>
-          <GhostIcon className="w-4 h-4 text-amber-500" />
+        <div className="bg-surface p-4 sm:p-5">
+          <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
+            Interview rate
+          </div>
+          <div className="mt-3 font-mono text-3xl leading-none text-ink">
+            {interviewRate}%
+          </div>
+          <div className="mt-3 text-[11px] leading-snug text-muted">
+            {interviewCount} dari {submittedCount} masuk wawancara
+          </div>
         </div>
-        <div className="text-2xl font-black text-amber-600 dark:text-amber-400">
-          {ghostingRiskCount}
-        </div>
-        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          &gt; 14 hari tanpa kabar
-        </div>
-      </div>
 
-      {/* 5. Offer Diterima */}
-      <div className="col-span-2 md:col-span-1 bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-700 transition-all">
-        <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-          <span className="text-xs uppercase tracking-wider font-semibold">Offer Diterima</span>
-          <Award className="w-4 h-4 text-emerald-500" />
+        <div className="bg-surface p-4 sm:p-5">
+          <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
+            Rawan ghosting
+          </div>
+          <div
+            className={`mt-3 font-mono text-3xl leading-none ${
+              ghostingRiskCount > 0 ? 'text-warning' : 'text-ink'
+            }`}
+          >
+            {ghostingRiskCount}
+          </div>
+          <div className="mt-3 text-[11px] leading-snug text-muted">
+            Lebih dari 14 hari tanpa kabar
+          </div>
         </div>
-        <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-          {offerCount}
-        </div>
-        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Siap dibandingkan
+
+        <div className="bg-surface p-4 sm:p-5">
+          <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
+            Offer diterima
+          </div>
+          <div
+            className={`mt-3 font-mono text-3xl leading-none ${
+              offerCount > 0 ? 'text-success' : 'text-ink'
+            }`}
+          >
+            {offerCount}
+          </div>
+          <div className="mt-3 text-[11px] leading-snug text-muted">
+            Siap dibandingkan
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };

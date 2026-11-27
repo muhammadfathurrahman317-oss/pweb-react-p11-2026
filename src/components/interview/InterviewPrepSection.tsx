@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, SkipForward, Clock } from '../common/Icons';
+import { buttonPrimary, buttonSecondary, kicker } from '../common/ui';
 
 export const INTERVIEW_QUESTIONS = [
   'Ceritakan tentang dirimu dan proyek web terbaik yang pernah kamu kerjakan menggunakan React & TypeScript!',
@@ -9,37 +10,33 @@ export const INTERVIEW_QUESTIONS = [
   'Apa strategi yang kamu lakukan jika backend API tiba-tiba lambat atau down saat aplikasi sedang digunakan pengguna?',
 ];
 
-const DEFAULT_TIME_SECONDS = 120; // 02:00
+const DEFAULT_TIME_SECONDS = 120;
 
 export const InterviewPrepSection: React.FC = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(DEFAULT_TIME_SECONDS);
   const [isRunning, setIsRunning] = useState(false);
 
-  // Wajib Cleanup: Timer with clearInterval in return to avoid leaks on unmount or re-render!
   useEffect(() => {
-    let intervalId: number | undefined = undefined;
+    if (!isRunning) return;
 
-    if (isRunning) {
-      intervalId = window.setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            setIsRunning(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    const intervalId = window.setInterval(() => {
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
 
-    return () => {
-      if (intervalId !== undefined) {
-        clearInterval(intervalId);
-      }
-    };
+    return () => clearInterval(intervalId);
   }, [isRunning]);
 
+  useEffect(() => {
+    if (isRunning && timeLeft === 0) {
+      setIsRunning(false);
+    }
+  }, [isRunning, timeLeft]);
+
   const toggleStartPause = () => {
+    if (!isRunning && timeLeft === 0) {
+      setTimeLeft(DEFAULT_TIME_SECONDS);
+    }
     setIsRunning((prev) => !prev);
   };
 
@@ -60,64 +57,83 @@ export const InterviewPrepSection: React.FC = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const isLow = timeLeft <= 20 && timeLeft > 0;
+  const isFinished = timeLeft === 0;
+
   return (
-    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-200 dark:border-slate-700/80 space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-          <h4 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-            Latihan Interview Berwaktu
-          </h4>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-rule pb-3">
+        <div>
+          <p className={kicker}>Latihan</p>
+          <h3 className="mt-0.5 font-display text-xl leading-tight text-ink">
+            Interview berwaktu
+          </h3>
         </div>
-        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300">
+        <span className="font-mono text-[11px] text-muted">
           Soal {currentQuestionIndex + 1} / {INTERVIEW_QUESTIONS.length}
         </span>
       </div>
 
-      {/* Question Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-700 text-sm italic font-medium text-slate-800 dark:text-slate-200 min-h-[72px] flex items-center">
+      <p className="border-l-2 border-accent pl-4 font-display text-lg leading-relaxed text-ink">
         &ldquo;{INTERVIEW_QUESTIONS[currentQuestionIndex]}&rdquo;
-      </div>
+      </p>
 
-      {/* Timer & Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-        {/* Countdown Digits */}
-        <div className="flex items-baseline gap-2">
+      <div className="flex flex-col gap-5 border-y border-rule py-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2">
+            <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
+              <Clock className="h-3 w-3" />
+              Sisa waktu
+            </span>
+            <span className="font-mono text-[11px] text-muted">
+              {isRunning ? 'berjalan' : isFinished ? 'habis' : 'jeda'}
+            </span>
+          </div>
+
           <div
-            className={`font-mono text-3xl sm:text-4xl font-extrabold tracking-tight ${
-              timeLeft <= 20
-                ? 'text-rose-600 dark:text-rose-400 animate-pulse'
-                : 'text-slate-900 dark:text-white'
+            role="timer"
+            aria-live="off"
+            className={`mt-1 font-mono text-4xl leading-none tracking-tight sm:text-5xl ${
+              isFinished ? 'text-danger' : isLow ? 'text-warning' : 'text-ink'
             }`}
           >
             {formatTime(timeLeft)}
           </div>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            {isRunning ? 'Berjalan...' : timeLeft === 0 ? 'Waktu Habis!' : 'Jeda'}
-          </span>
+
+          <div
+            className="mt-2 h-0.5 w-full max-w-xs bg-rule"
+            role="progressbar"
+            aria-label="Sisa waktu latihan"
+            aria-valuemin={0}
+            aria-valuemax={DEFAULT_TIME_SECONDS}
+            aria-valuenow={timeLeft}
+          >
+            <div
+              className={`h-0.5 ${isFinished ? 'bg-danger' : isLow ? 'bg-warning' : 'bg-accent'}`}
+              style={{ width: `${(timeLeft / DEFAULT_TIME_SECONDS) * 100}%` }}
+            />
+          </div>
+
+          <p className="mt-2 text-[11px] leading-relaxed text-muted">
+            Jawab dengan suara, dua menit per soal. Timer berhenti sendiri saat waktu habis.
+          </p>
         </div>
 
-        {/* Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={toggleStartPause}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs ${
-              isRunning
-                ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
+            className={`${isRunning ? buttonSecondary : buttonPrimary} min-h-11 px-3 text-xs`}
           >
             {isRunning ? (
               <>
-                <Pause className="w-3.5 h-3.5" />
+                <Pause className="h-3.5 w-3.5" />
                 <span>Jeda</span>
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5" />
-                <span>Mulai</span>
+                <Play className="h-3.5 w-3.5" />
+                <span>{isFinished ? 'Ulangi' : 'Mulai'}</span>
               </>
             )}
           </button>
@@ -125,19 +141,19 @@ export const InterviewPrepSection: React.FC = () => {
           <button
             type="button"
             onClick={handleReset}
-            className="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 flex items-center gap-1 transition-colors"
+            className={`${buttonSecondary} min-h-11 px-3 text-xs`}
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="h-3.5 w-3.5" />
             <span>Reset</span>
           </button>
 
           <button
             type="button"
             onClick={handleNextQuestion}
-            className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 shadow-xs transition-colors"
+            className={`${buttonSecondary} min-h-11 px-3 text-xs`}
           >
-            <span>Soal Berikutnya</span>
-            <SkipForward className="w-3.5 h-3.5" />
+            <span>Soal berikutnya</span>
+            <SkipForward className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>

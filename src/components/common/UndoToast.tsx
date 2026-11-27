@@ -1,6 +1,7 @@
 import React from 'react';
 import { Application } from '../../types';
 import { Undo, X } from './Icons';
+import { buttonPrimary } from './ui';
 
 interface UndoToastProps {
   deletedApp: Application | null;
@@ -18,29 +19,39 @@ export const UndoToast: React.FC<UndoToastProps> = ({
   if (!deletedApp) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 animate-bounce-short">
-      <div className="bg-slate-900 text-white rounded-xl shadow-2xl px-4 py-3 border border-slate-700 flex items-center gap-4 text-xs sm:text-sm">
-        <div>
-          <span>Lamaran </span>
-          <span className="font-bold text-blue-400">{deletedApp.company}</span>
-          <span> ({deletedApp.role}) telah dihapus.</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onUndo}
-            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 font-bold text-white flex items-center gap-1.5 shadow-sm transition-all"
-          >
-            <Undo className="w-3.5 h-3.5" />
-            <span>Undo ({secondsRemaining}s)</span>
-          </button>
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-4 left-4 right-4 z-50 sm:left-auto sm:right-6 sm:w-[380px]"
+    >
+      <div className="border border-rule border-l-2 border-l-accent bg-surface p-3 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.45)]">
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted">
+              Lamaran dihapus
+            </p>
+            <p className="mt-1 text-sm leading-snug text-ink">
+              <span className="font-medium">{deletedApp.company}</span>
+              <span className="text-muted"> · {deletedApp.role}</span>
+            </p>
+          </div>
           <button
             type="button"
             onClick={onDismiss}
-            className="text-slate-400 hover:text-white p-1"
+            aria-label="Tutup notifikasi"
+            className="flex h-11 w-11 shrink-0 items-center justify-center text-muted transition-colors hover:bg-highlight hover:text-ink"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span className="font-mono text-[11px] text-muted">
+            Urungkan dalam {secondsRemaining} detik
+          </span>
+          <button type="button" onClick={onUndo} className={`${buttonPrimary} px-3 py-1.5 text-xs`}>
+            <Undo className="h-3.5 w-3.5" />
+            <span>Urungkan</span>
           </button>
         </div>
       </div>

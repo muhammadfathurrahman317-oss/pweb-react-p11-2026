@@ -1,299 +1,266 @@
-import React, { useState, useMemo } from 'react';
-import { Application } from '../../types';
-import { compareOffers } from '../../utils/offerComparator';
+import React, { useId, useMemo, useState } from 'react';
+import { Application, OfferComparisonResult } from '../../types';
+import { compareOffers, isValidOffer, WORK_MODE_BASE_SCORES } from '../../utils/offerComparator';
 import { formatRupiah } from '../../utils/formatters';
-import { Award, Sparkles } from '../common/Icons';
+import { SectionHeading } from '../common/SectionHeading';
+import {
+  buttonPrimary,
+  buttonSecondary,
+  fieldLabel,
+  kicker,
+  select,
+} from '../common/ui';
 
 interface OfferComparatorViewProps {
   applications: Application[];
   kaptenSkills: string[];
+  onGoToPipeline: () => void;
 }
+
+interface OfferSheetProps {
+  offer: Application;
+  result: OfferComparisonResult;
+  side: 'A' | 'B';
+  isRecommended: boolean;
+}
+
+const OfferSheet: React.FC<OfferSheetProps> = ({ offer, result, side, isRecommended }) => {
+  return (
+    <div className="flex flex-col border border-rule bg-surface">
+      <div className={`h-0.5 w-full ${isRecommended ? 'bg-accent' : 'bg-ink/20'}`} />
+
+      <div className="flex flex-1 flex-col p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3 border-b border-rule pb-4">
+          <div className="min-w-0">
+            <p className={kicker}>Offer {side}</p>
+            <h3 className="mt-1 font-display text-2xl leading-tight text-ink">
+              {offer.company}
+            </h3>
+            <p className="mt-0.5 text-xs leading-snug text-muted">{offer.role}</p>
+          </div>
+          {isRecommended && (
+            <span className="-rotate-2 border border-accent px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-accent">
+              Rekomendasi
+            </span>
+          )}
+        </div>
+
+        <dl className="divide-y divide-rule text-xs">
+          <div className="flex items-start justify-between gap-4 py-3">
+            <dt className="text-muted">Uang saku / bulan</dt>
+            <dd className="text-right">
+              <span className="block font-mono text-sm text-ink">
+                {formatRupiah(offer.salaryOffer)}
+              </span>
+            </dd>
+          </div>
+
+          <div className="flex items-start justify-between gap-4 py-3">
+            <dt className="text-muted">Mode kerja</dt>
+            <dd className="text-right">
+              <span className="block text-sm text-ink">
+                {offer.workMode}
+                <span className="ml-1 font-mono text-[10px] text-muted">
+                  ({WORK_MODE_BASE_SCORES[offer.workMode]})
+                </span>
+              </span>
+            </dd>
+          </div>
+
+          <div className="flex items-start justify-between gap-4 py-3">
+            <dt className="text-muted">Kecocokan skill</dt>
+            <dd className="text-right">
+              <span className="block text-sm text-ink">
+                {result.matchPercentage}%
+                <span className="ml-1 font-mono text-[10px] text-muted">
+                  ({result.matchedSkillsCount}/{result.totalSkillsCount})
+                </span>
+              </span>
+            </dd>
+          </div>
+        </dl>
+
+        <div className="mt-auto border-t border-ink/20 pt-4">
+          <div className="flex items-end justify-between gap-3">
+            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
+              Total skor
+            </span>
+            <span
+              className={`font-display text-4xl leading-none ${
+                isRecommended ? 'text-accent' : 'text-ink'
+              }`}
+            >
+              {result.totalScore.toFixed(1)}
+              <span className="ml-1 font-mono text-xs text-muted">/100</span>
+            </span>
+          </div>
+          <div
+            className="mt-2 h-0.5 w-full bg-rule"
+            role="progressbar"
+            aria-label={`Total skor ${offer.company}`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(result.totalScore)}
+          >
+            <div
+              className={`h-0.5 ${isRecommended ? 'bg-accent' : 'bg-ink/40'}`}
+              style={{ width: `${Math.min(100, Math.max(0, result.totalScore))}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const OfferComparatorView: React.FC<OfferComparatorViewProps> = ({
   applications,
   kaptenSkills,
+  onGoToPipeline,
 }) => {
-  // Only applications with status === 'OFFER'
-  const offerApps = useMemo(() => {
-    return applications.filter((app) => app.status === 'OFFER');
-  }, [applications]);
-
-  // Dropdown selection state: index or ID of offer A and B
-  const [selectedOfferAId, setSelectedOfferAId] = useState<string>(
-    offerApps[0]?.id || ''
-  );
-  const [selectedOfferBId, setSelectedOfferBId] = useState<string>(
-    offerApps[1]?.id || ''
+  const offerApps = useMemo(
+    () => applications.filter(isValidOffer),
+    [applications]
   );
 
-  // Keep selection synced if offers list changes
+  const [selectedOfferAId, setSelectedOfferAId] = useState<string>(offerApps[0]?.id || '');
+  const [selectedOfferBId, setSelectedOfferBId] = useState<string>(offerApps[1]?.id || '');
+
   const offerA = offerApps.find((app) => app.id === selectedOfferAId) || offerApps[0];
   const offerB =
     offerApps.find((app) => app.id === selectedOfferBId && app.id !== offerA?.id) ||
     offerApps.find((app) => app.id !== offerA?.id) ||
     offerApps[1];
 
-  // If fewer than 2 offers exist
-  if (offerApps.length < 2) {
-    return (
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-12 border border-slate-200 dark:border-slate-800 text-center space-y-4 max-w-2xl mx-auto shadow-xs">
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-          <Award className="w-8 h-8" />
-        </div>
-        <div className="space-y-1">
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-            Belum Cukup Tawaran untuk Dibandingkan
-          </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-            Kapten membutuhkan minimal <strong>2 lamaran berstatus OFFER</strong> untuk menjalankan komparator objektif.
-          </p>
-        </div>
+  const selectIdA = useId();
+  const selectIdB = useId();
 
-        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-left text-xs space-y-2">
-          <span className="font-bold text-slate-700 dark:text-slate-200">
-            Cara Menguji Fitur Ini:
-          </span>
-          <ol className="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-400">
-            <li>Buka tab <strong>Pipeline Lamaran</strong>.</li>
-            <li>Klik salah satu lamaran (atau buat baru) lalu buka <strong>Detail & Kelola</strong>.</li>
-            <li>Pindahkan statusnya secara bertahap menuju <strong>OFFER</strong> (isi nominal gaji &gt; 0).</li>
-            <li>Setelah ada minimal 2 OFFER, komparator berbobot otomatis aktif di sini!</li>
-          </ol>
+  if (offerApps.length < 2 || new Set(offerApps.map((app) => app.id)).size < 2) {
+    return (
+      <section className="space-y-5">
+        <SectionHeading
+          index="02"
+          title="Bandingkan offer"
+          description="Bobot penilaian: uang saku 50%, mode kerja 25%, kecocokan skill 25%."
+        />
+
+        <div className="border border-rule bg-surface px-6 py-10 sm:px-8">
+          <div className="max-w-xl">
+            <p className={kicker}>Belum bisa dibandingkan</p>
+            <h3 className="mt-1 font-display text-2xl leading-tight text-ink">
+              Butuh dua offer untuk membandingkan
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Komparator ini memakai bobot yang sama untuk setiap tawaran, jadi hasilnya baru
+              berarti kalau ada dua offer yang bisa diadu.
+            </p>
+
+            <ol className="mt-5 divide-y divide-rule border-y border-rule">
+              <li className="flex gap-3 py-2.5 text-sm leading-relaxed">
+                <span className="font-mono text-[11px] text-muted">01</span>
+                <span>Buka pipeline dan pilih lamaran yang sudah sampai tahap offer.</span>
+              </li>
+              <li className="flex gap-3 py-2.5 text-sm leading-relaxed">
+                <span className="font-mono text-[11px] text-muted">02</span>
+                <span>Isi nominal uang saku dan mode kerjanya saat memindahkan status.</span>
+              </li>
+              <li className="flex gap-3 py-2.5 text-sm leading-relaxed">
+                <span className="font-mono text-[11px] text-muted">03</span>
+                <span>Ulangi untuk offer kedua, lalu kembali ke halaman ini.</span>
+              </li>
+            </ol>
+
+            <button type="button" onClick={onGoToPipeline} className={`${buttonPrimary} mt-5`}>
+              Buka pipeline
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
     );
   }
 
-  // Calculate Comparison Results
   const comparison = compareOffers(offerA, offerB, kaptenSkills);
+  if (!comparison) return null;
   const { resultA, resultB, bestOfferId } = comparison;
 
+  const swapOffers = () => {
+    setSelectedOfferAId(offerB.id);
+    setSelectedOfferBId(offerA.id);
+  };
+
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Title & Selector Header */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-blue-500" />
-            <span>Bandingkan Offer Magang</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Bobot penilaian: Uang Saku 50% • Mode Kerja 25% • Kecocokan Skill 25%
-          </p>
+    <section className="space-y-5">
+      <SectionHeading
+        index="02"
+        title="Bandingkan offer"
+        description="Bobot penilaian: uang saku 50%, mode kerja 25%, kecocokan skill 25%."
+      />
+
+      <div className="flex flex-wrap items-end gap-3 border-y border-rule py-3">
+        <div className="min-w-[160px] flex-1 sm:flex-none">
+          <label htmlFor={selectIdA} className={fieldLabel}>
+            Offer A
+          </label>
+          <select
+            id={selectIdA}
+            value={offerA.id}
+            onChange={(e) => setSelectedOfferAId(e.target.value)}
+            className={`${select} min-h-11`}
+          >
+            {offerApps.map((app) => (
+              <option key={app.id} value={app.id} disabled={app.id === offerB.id}>
+                {app.company}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Dropdown selectors */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-slate-500">Offer A:</span>
-            <select
-              value={offerA.id}
-              onChange={(e) => setSelectedOfferAId(e.target.value)}
-              className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {offerApps.map((app) => (
-                <option key={app.id} value={app.id}>
-                  {app.company}
-                </option>
-              ))}
-            </select>
-          </div>
+        <span className="pb-2.5 font-display text-lg text-muted">vs</span>
 
-          <span className="font-bold text-slate-400">vs</span>
-
-          <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-slate-500">Offer B:</span>
-            <select
-              value={offerB.id}
-              onChange={(e) => setSelectedOfferBId(e.target.value)}
-              className="px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {offerApps.map((app) => (
-                <option key={app.id} value={app.id}>
-                  {app.company}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="min-w-[160px] flex-1 sm:flex-none">
+          <label htmlFor={selectIdB} className={fieldLabel}>
+            Offer B
+          </label>
+          <select
+            id={selectIdB}
+            value={offerB.id}
+            onChange={(e) => setSelectedOfferBId(e.target.value)}
+            className={`${select} min-h-11`}
+          >
+            {offerApps.map((app) => (
+              <option key={app.id} value={app.id} disabled={app.id === offerA.id}>
+                {app.company}
+              </option>
+            ))}
+          </select>
         </div>
+
+        <button type="button" onClick={swapOffers} className={`${buttonSecondary} min-h-11`}>
+          Tukar posisi
+        </button>
       </div>
 
-      {/* Side-by-Side Comparison Grid (exact wireframe style page 9!) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Card Offer A */}
-        <div
-          className={`bg-white dark:bg-slate-900 rounded-2xl p-6 border flex flex-col justify-between shadow-sm transition-all ${
-            bestOfferId === offerA.id
-              ? 'ring-2 ring-blue-500 border-blue-500/50 shadow-blue-500/10'
-              : 'border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <div className="space-y-5">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                  {offerA.company}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  {offerA.role}
-                </p>
-              </div>
-              {bestOfferId === offerA.id && (
-                <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700 shadow-xs flex items-center gap-1">
-                  <Award className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                  <span>Rekomendasi Terbaik</span>
-                </span>
-              )}
-            </div>
-
-            {/* Criteria Scores Table */}
-            <div className="space-y-3.5 text-xs">
-              {/* 1. Uang Saku */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">
-                  Uang Saku / Bulan
-                </span>
-                <div className="text-right">
-                  <span className="font-bold text-slate-900 dark:text-white block">
-                    {formatRupiah(offerA.salaryOffer)}
-                  </span>
-                  <span className="text-[11px] font-semibold text-slate-500">
-                    {resultA.salaryScore.toFixed(1)} / 50
-                  </span>
-                </div>
-              </div>
-
-              {/* 2. Mode Kerja */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">
-                  Mode Kerja
-                </span>
-                <div className="text-right">
-                  <span className="font-bold text-slate-900 dark:text-white block">
-                    {offerA.workMode} ({offerA.workMode === 'Remote' ? 100 : offerA.workMode === 'Hybrid' ? 75 : 50})
-                  </span>
-                  <span className="text-[11px] font-semibold text-slate-500">
-                    {resultA.workModeScore.toFixed(1)} / 25
-                  </span>
-                </div>
-              </div>
-
-              {/* 3. Kecocokan Skill */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">
-                  Kecocokan Skill
-                </span>
-                <div className="text-right">
-                  <span className="font-bold text-slate-900 dark:text-white block">
-                    {resultA.matchPercentage}% ({resultA.matchedSkillsCount} dari {resultA.totalSkillsCount} skill)
-                  </span>
-                  <span className="text-[11px] font-semibold text-slate-500">
-                    {resultA.skillMatchScore.toFixed(1)} / 25
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Score Footer */}
-          <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Skor Berbobot
-            </span>
-            <span className="text-3xl font-black text-blue-600 dark:text-blue-400">
-              {resultA.totalScore.toFixed(1)}
-            </span>
-          </div>
-        </div>
-
-        {/* Card Offer B */}
-        <div
-          className={`bg-white dark:bg-slate-900 rounded-2xl p-6 border flex flex-col justify-between shadow-sm transition-all ${
-            bestOfferId === offerB.id
-              ? 'ring-2 ring-blue-500 border-blue-500/50 shadow-blue-500/10'
-              : 'border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <div className="space-y-5">
-            {/* Header */}
-            <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                  {offerB.company}
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  {offerB.role}
-                </p>
-              </div>
-              {bestOfferId === offerB.id && (
-                <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700 shadow-xs flex items-center gap-1">
-                  <Award className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                  <span>Rekomendasi Terbaik</span>
-                </span>
-              )}
-            </div>
-
-            {/* Criteria Scores Table */}
-            <div className="space-y-3.5 text-xs">
-              {/* 1. Uang Saku */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">
-                  Uang Saku / Bulan
-                </span>
-                <div className="text-right">
-                  <span className="font-bold text-slate-900 dark:text-white block">
-                    {formatRupiah(offerB.salaryOffer)}
-                  </span>
-                  <span className="text-[11px] font-semibold text-slate-500">
-                    {resultB.salaryScore.toFixed(1)} / 50
-                  </span>
-                </div>
-              </div>
-
-              {/* 2. Mode Kerja */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">
-                  Mode Kerja
-                </span>
-                <div className="text-right">
-                  <span className="font-bold text-slate-900 dark:text-white block">
-                    {offerB.workMode} ({offerB.workMode === 'Remote' ? 100 : offerB.workMode === 'Hybrid' ? 75 : 50})
-                  </span>
-                  <span className="text-[11px] font-semibold text-slate-500">
-                    {resultB.workModeScore.toFixed(1)} / 25
-                  </span>
-                </div>
-              </div>
-
-              {/* 3. Kecocokan Skill */}
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">
-                  Kecocokan Skill
-                </span>
-                <div className="text-right">
-                  <span className="font-bold text-slate-900 dark:text-white block">
-                    {resultB.matchPercentage}% ({resultB.matchedSkillsCount} dari {resultB.totalSkillsCount} skill)
-                  </span>
-                  <span className="text-[11px] font-semibold text-slate-500">
-                    {resultB.skillMatchScore.toFixed(1)} / 25
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Score Footer */}
-          <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-              Total Skor Berbobot
-            </span>
-            <span className="text-3xl font-black text-blue-600 dark:text-blue-400">
-              {resultB.totalScore.toFixed(1)}
-            </span>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <OfferSheet
+          offer={offerA}
+          result={resultA}
+          side="A"
+          isRecommended={bestOfferId === offerA.id}
+        />
+        <OfferSheet
+          offer={offerB}
+          result={resultB}
+          side="B"
+          isRecommended={bestOfferId === offerB.id}
+        />
       </div>
-    </div>
+
+      {bestOfferId === null && (
+        <p className="border border-rule bg-surface px-4 py-3 text-xs leading-relaxed text-muted">
+          Skor kedua offer sama. Tidak ada rekomendasi otomatis; pilih berdasarkan hal yang
+          tidak masuk ke perhitungan, seperti tim, lokasi, atau jalur karier.
+        </p>
+      )}
+    </section>
   );
 };
