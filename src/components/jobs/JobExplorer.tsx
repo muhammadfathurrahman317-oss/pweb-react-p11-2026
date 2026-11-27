@@ -1,19 +1,21 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useId } from 'react';
 import { Application, JobListing } from '../../types';
-import { fetchJobs, JobDataSource } from '../../services/jobService';
+import { JobDataSource } from '../../services/jobService';
 import { useDebounce } from '../../hooks/useDebounce';
-import { calculateSkillMatch, getMatchBadgeColors } from '../../utils/skillMatch';
+import { useJobs } from '../../hooks/useJobs';
+import { calculateSkillMatch } from '../../utils/skillMatch';
 import { KaptenSkillProfile } from './KaptenSkillProfile';
+import { SectionHeading } from '../common/SectionHeading';
+import { MatchStamp } from '../common/StatusStamp';
 import {
   Search,
-  Building2,
   MapPin,
-  DollarSign,
   Check,
   Plus,
   RefreshCw,
   AlertTriangle,
 } from '../common/Icons';
+import { buttonPrimary, buttonSecondary, field, select } from '../common/ui';
 
 interface JobExplorerProps {
   kaptenSkills: string[];
@@ -31,26 +33,24 @@ export const JobExplorer: React.FC<JobExplorerProps> = ({
   onSaveToWishlist,
 }) => {
   const [dataSource, setDataSource] = useState<JobDataSource>('remotive');
-  const [jobs, setJobs] = useState<JobListing[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { jobs, isLoading, errorMessage, retry } = useJobs(dataSource);
 
-  // Search, filter, and sort state
   const [searchInput, setSearchInput] = useState<string>('');
   const debouncedSearch = useDebounce<string>(searchInput, 400);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [sortBy, setSortBy] = useState<'match-desc' | 'match-asc' | 'company-asc'>('match-desc');
+  const [sortBy, setSortBy] = useState<'match-desc' | 'match-asc' | 'company-asc'>(
+    'match-desc'
+  );
 
-  // Ref for search input (Bonus: keyboard shortcut '/')
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchId = useId();
 
-  // Keyboard shortcut listener: Press '/' to focus search bar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if already inside an input or textarea
       if (
         document.activeElement?.tagName === 'INPUT' ||
-        document.activeElement?.tagName === 'TEXTAREA'
+        document.activeElement?.tagName === 'TEXTAREA' ||
+        document.activeElement?.tagName === 'SELECT'
       ) {
         return;
       }
@@ -64,39 +64,6 @@ export const JobExplorer: React.FC<JobExplorerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Fetch jobs with useEffect + AbortController
-  const loadJobs = async (source: JobDataSource) => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    const controller = new AbortController();
-
-    try {
-      const data = await fetchJobs(source, controller.signal);
-      setJobs(data);
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        return;
-      }
-      setErrorMessage(
-        err instanceof Error
-          ? err.message
-          : 'Terjadi kesalahan saat memuat lowongan.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-
-    return () => controller.abort();
-  };
-
-  useEffect(() => {
-    const abortPromise = loadJobs(dataSource);
-    return () => {
-      abortPromise.then((abort) => abort && abort());
-    };
-  }, [dataSource]);
-
-  // Extract unique categories from loaded jobs
   const categories = useMemo(() => {
     const set = new Set<string>();
     jobs.forEach((job) => {
@@ -105,7 +72,6 @@ export const JobExplorer: React.FC<JobExplorerProps> = ({
     return Array.from(set).sort();
   }, [jobs]);
 
-  // Helper to check if a job is already in applications (case-insensitive company + role)
   const isJobApplied = (job: JobListing): boolean => {
     return applications.some(
       (app) =>
@@ -114,18 +80,12 @@ export const JobExplorer: React.FC<JobExplorerProps> = ({
     );
   };
 
-  // Filter and sort jobs
   const filteredAndSortedJobs = useMemo(() => {
     let result = jobs.map((job) => {
       const matchResult = calculateSkillMatch(kaptenSkills, job.tags);
-      return {
-        job,
-        matchResult,
-        isApplied: isJobApplied(job),
-      };
+      return { job, matchResult, isApplied: isJobApplied(job) };
     });
 
-    // 1. Text Search Filter (debounced, 400ms)
     if (debouncedSearch.trim() !== '') {
       const query = debouncedSearch.toLowerCase();
       result = result.filter(
@@ -136,68 +96,78 @@ export const JobExplorer: React.FC<JobExplorerProps> = ({
       );
     }
 
-    // 2. Category Filter
     if (selectedCategory !== 'ALL') {
       result = result.filter(({ job }) => job.category === selectedCategory);
     }
 
-    // 3. Sorting
     result.sort((a, b) => {
-      if (sortBy === 'match-desc') {
-        return b.matchResult.score - a.matchResult.score;
-      }
-      if (sortBy === 'match-asc') {
-        return a.matchResult.score - b.matchResult.score;
-      }
-      if (sortBy === 'company-asc') {
-        return a.job.company_name.localeCompare(b.job.company_name);
-      }
+      if (sortBy === 'match-desc') return b.matchResult.score - a.matchResult.score;
+      if (sortBy === 'match-asc') return a.matchResult.score - b.matchResult.score;
+      if (sortBy === 'company-asc') return a.job.company_name.localeCompare(b.job.company_name);
       return 0;
     });
 
     return result;
+    // isJobApplied reads applications, which is listed in the deps below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobs, kaptenSkills, debouncedSearch, selectedCategory, sortBy, applications]);
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Left Column: Kapten's Skill Profile */}
-      <div className="lg:col-span-1">
-        <KaptenSkillProfile
-          skills={kaptenSkills}
-          onAddSkill={onAddKaptenSkill}
-          onRemoveSkill={onRemoveKaptenSkill}
-          dataSource={dataSource}
-          onDataSourceChange={(newSource) => setDataSource(newSource)}
-        />
-      </div>
+  const sourceLabel = dataSource === 'remotive' ? 'Remotive API' : 'Dataset lokal';
 
-      {/* Right Column: Search & Job Listings */}
-      <div className="lg:col-span-3 space-y-4">
-        {/* Search & Filter Toolbar */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3 sm:space-y-0 sm:flex sm:items-center sm:gap-3">
-          {/* Search Input with Debounce */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+  const resetSearch = () => {
+    setSearchInput('');
+    setSelectedCategory('ALL');
+  };
+
+  return (
+    <section className="space-y-5">
+      <SectionHeading
+        index="02"
+        title="Katalog lowongan"
+        description="Lowongan yang sedang buka, diurutkan dari yang paling cocok dengan skill-mu."
+        action={
+          <span className="font-mono text-[11px] text-muted">
+            {isLoading ? 'Memuat' : `${filteredAndSortedJobs.length} lowongan`}
+          </span>
+        }
+      />
+
+      <KaptenSkillProfile
+        skills={kaptenSkills}
+        onAddSkill={onAddKaptenSkill}
+        onRemoveSkill={onRemoveKaptenSkill}
+        dataSource={dataSource}
+        onDataSourceChange={(newSource) => setDataSource(newSource)}
+      />
+
+      <div className="border-y border-rule py-3">
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_200px_200px]">
+          <div className="relative min-w-0">
+            <label htmlFor={searchId} className="sr-only">
+              Cari lowongan
+            </label>
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <input
+              id={searchId}
               ref={searchInputRef}
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Cari posisi atau perusahaan... (tekan / untuk cari)"
-              className="w-full pl-9 pr-12 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Cari posisi, perusahaan, atau skill"
+              className={`${field} min-h-11 pl-9 pr-12`}
             />
-            <span className="hidden sm:inline-block absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-600">
+            <span className="absolute right-3 top-1/2 hidden -translate-y-1/2 border border-rule px-1.5 font-mono text-[10px] text-muted sm:inline-block">
               /
             </span>
           </div>
 
-          {/* Category Filter */}
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full sm:w-48 px-3 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Filter kategori lowongan"
+            className={`${select} min-h-11`}
           >
-            <option value="ALL">Semua Kategori</option>
+            <option value="ALL">Semua kategori</option>
             {categories.map((cat) => (
               <option key={cat} value={cat}>
                 {cat}
@@ -205,215 +175,191 @@ export const JobExplorer: React.FC<JobExplorerProps> = ({
             ))}
           </select>
 
-          {/* Sorting Dropdown */}
           <select
             value={sortBy}
             onChange={(e) =>
-              setSortBy(
-                e.target.value as 'match-desc' | 'match-asc' | 'company-asc'
-              )
+              setSortBy(e.target.value as 'match-desc' | 'match-asc' | 'company-asc')
             }
-            className="w-full sm:w-44 px-3 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label="Urutkan lowongan"
+            className={`${select} min-h-11`}
           >
-            <option value="match-desc">Match Tertinggi</option>
-            <option value="match-asc">Match Terendah</option>
+            <option value="match-desc">Kecocokan tertinggi</option>
+            <option value="match-asc">Kecocokan terendah</option>
             <option value="company-asc">Perusahaan (A-Z)</option>
           </select>
         </div>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2, 3, 4].map((n) => (
-              <div
-                key={n}
-                className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 animate-pulse space-y-3"
-              >
-                <div className="h-5 bg-slate-200 dark:bg-slate-800 rounded w-3/4" />
-                <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded w-1/2" />
-                <div className="h-10 bg-slate-100 dark:bg-slate-800/60 rounded" />
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] text-muted">
+          <span className="font-mono">
+            {sourceLabel} · {filteredAndSortedJobs.length} hasil
+          </span>
+          <span className="hidden sm:inline">
+            Tekan <kbd className="border border-rule px-1 font-mono">/</kbd> untuk mencari
+          </span>
+        </div>
+      </div>
 
-        {/* Error State with Retry & Fallback Button (Testcase 1) */}
-        {!isLoading && errorMessage && (
-          <div className="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl p-6 text-center space-y-4">
-            <div className="w-12 h-12 mx-auto rounded-full bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-rose-800 dark:text-rose-200">
-                Gagal Mengambil Data Lowongan
-              </h3>
-              <p className="text-sm text-rose-600 dark:text-rose-300 mt-1 max-w-md mx-auto">
-                {errorMessage}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <button
-                onClick={() => loadJobs(dataSource)}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 shadow-xs transition-colors"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span>Coba Lagi</span>
-              </button>
-              <button
-                onClick={() => setDataSource('local')}
-                className="px-4 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                Gunakan Fallback Lokal (magang-fallback.json)
-              </button>
-            </div>
+      {isLoading && (
+        <div className="border border-rule bg-surface" aria-busy="true">
+          <div className="border-b border-rule px-4 py-3 text-xs text-muted">
+            Memuat lowongan dari {sourceLabel}...
           </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && !errorMessage && filteredAndSortedJobs.length === 0 && (
-          <div className="bg-white dark:bg-slate-900 rounded-xl p-10 border border-slate-200 dark:border-slate-800 text-center space-y-3">
-            <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
-              <Search className="w-6 h-6" />
+          {[0, 1, 2].map((n) => (
+            <div key={n} className="border-b border-rule px-4 py-5 last:border-b-0">
+              <div className="h-3 w-28 bg-rule" />
+              <div className="mt-3 h-5 w-2/3 bg-rule/70" />
+              <div className="mt-3 h-3 w-1/2 bg-rule/60" />
             </div>
-            <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
-              Tidak Ada Lowongan Ditemukan
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-              Tidak ada lowongan yang sesuai dengan kata kunci &quot;{searchInput}&quot; atau filter yang dipilih.
-            </p>
+          ))}
+        </div>
+      )}
+
+      {!isLoading && errorMessage && (
+        <div role="alert" className="border border-danger/40 bg-surface px-6 py-10 text-center">
+          <AlertTriangle className="mx-auto h-7 w-7 text-danger" />
+          <h3 className="mt-4 font-display text-xl text-ink">Lowongan gagal dimuat</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
+            {errorMessage}
+          </p>
+          <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-muted">
+            Periksa koneksi lalu coba lagi, atau pakai dataset lokal yang ikut tersimpan di
+            aplikasi.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <button type="button" onClick={retry} className={buttonPrimary}>
+              <RefreshCw className="h-4 w-4" />
+              Coba lagi
+            </button>
             <button
-              onClick={() => {
-                setSearchInput('');
-                setSelectedCategory('ALL');
-              }}
-              className="text-xs text-blue-600 dark:text-blue-400 font-semibold hover:underline"
+              type="button"
+              onClick={() => setDataSource('local')}
+              className={buttonSecondary}
             >
-              Reset Filter Pencarian
+              Pakai dataset lokal
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Job Cards Grid */}
-        {!isLoading && !errorMessage && filteredAndSortedJobs.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredAndSortedJobs.map(({ job, matchResult, isApplied }) => {
-              const badgeColors = getMatchBadgeColors(matchResult.score);
-
-              return (
-                <div
-                  key={job.id}
-                  className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between transition-all"
+      {!isLoading && !errorMessage && filteredAndSortedJobs.length === 0 && (
+        <div className="border border-rule bg-surface px-6 py-12 text-center">
+          <Search className="mx-auto h-8 w-8 text-muted" />
+          <h3 className="mt-4 font-display text-xl text-ink">
+            {jobs.length === 0 ? 'Belum ada lowongan dari sumber ini' : 'Tidak ada yang cocok'}
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
+            {jobs.length === 0
+              ? 'Sumber ini tidak mengembalikan lowongan. Coba muat ulang atau pindah ke dataset lokal.'
+              : `Tidak ada lowongan yang cocok dengan "${searchInput}" dan filter yang dipilih.`}
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            {jobs.length === 0 ? (
+              <>
+                <button type="button" onClick={retry} className={buttonPrimary}>
+                  <RefreshCw className="h-4 w-4" />
+                  Muat ulang
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDataSource('local')}
+                  className={buttonSecondary}
                 >
-                  <div className="space-y-3">
-                    {/* Header: Company & Match Badge */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold flex items-center justify-center text-xs shrink-0 border border-slate-200 dark:border-slate-700">
-                          {job.company_name.substring(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
-                            {job.company_name}
-                          </h4>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                            <MapPin className="w-3 h-3 text-slate-400" />
-                            <span>{job.candidate_required_location}</span>
-                          </div>
-                        </div>
+                  Pakai dataset lokal
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={resetSearch} className={buttonSecondary}>
+                Bersihkan pencarian
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!isLoading && !errorMessage && filteredAndSortedJobs.length > 0 && (
+        <div>
+          <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted">
+            <span className="inline-flex items-center gap-1 text-success">
+              <Check className="h-3 w-3" />
+              cocok dengan skillmu
+            </span>
+            <span>·</span>
+            <span>skill tanpa tanda belum kamu kuasai</span>
+          </div>
+
+          <div className="border-t border-ink/25">
+            {filteredAndSortedJobs.map(({ job, matchResult, isApplied }) => (
+              <article
+                key={job.id}
+                className="border-b border-rule px-1 py-5 transition-colors hover:bg-highlight/35"
+              >
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-rule font-mono text-[11px] text-muted">
+                      {job.company_name.substring(0, 2).toUpperCase()}
+                    </span>
+
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-display text-lg leading-tight text-ink sm:text-xl">
+                          {job.title}
+                        </h3>
+                        {isApplied && (
+                          <span className="inline-flex items-center gap-1 border border-success/60 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-success">
+                            <Check className="h-3 w-3" />
+                            Sudah dilamar
+                          </span>
+                        )}
                       </div>
 
-                      {/* Match Score Badge */}
-                      <div
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${badgeColors.bg} ${badgeColors.text} ${badgeColors.border}`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${badgeColors.dot}`} />
-                        <span>{matchResult.score}% Match</span>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted">
+                        <span className="font-medium text-ink/80">{job.company_name}</span>
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {job.candidate_required_location}
+                        </span>
+                        <span>{job.category}</span>
+                        <span className="font-mono">{job.salary}</span>
                       </div>
-                    </div>
 
-                    {/* Job Title */}
-                    <div>
-                      <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 line-clamp-1">
-                        {job.title}
-                      </h3>
-                      <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        <span className="flex items-center gap-1">
-                          <Building2 className="w-3 h-3 text-slate-400" />
-                          <span>{job.category}</span>
-                        </span>
-                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                          <DollarSign className="w-3 h-3" />
-                          <span>{job.salary}</span>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Skill Breakdown (Matched vs Missing) */}
-                    <div className="space-y-1.5 pt-1">
-                      <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                        <span>Required Skills</span>
-                        <span className="text-slate-400">
-                          {matchResult.matchedSkills.length}/{matchResult.totalRequired} Cocok
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {/* Matched skills (Green) */}
+                      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 pt-1 text-[11px]">
                         {matchResult.matchedSkills.map((skill) => (
-                          <span
-                            key={skill}
-                            className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                          >
-                            <Check className="w-2.5 h-2.5" />
-                            <span>{skill}</span>
+                          <span key={skill} className="inline-flex items-center gap-0.5 text-success">
+                            <Check className="h-3 w-3" />
+                            {skill}
                           </span>
                         ))}
-                        {/* Missing skills (Gray) */}
                         {matchResult.missingSkills.map((skill) => (
-                          <span
-                            key={skill}
-                            className="inline-flex items-center text-[11px] px-2 py-0.5 rounded-md font-medium bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                          >
-                            <span>{skill}</span>
+                          <span key={skill} className="text-muted">
+                            {skill}
                           </span>
                         ))}
+                        {matchResult.totalRequired === 0 && (
+                          <span className="text-muted">Tidak ada skill khusus yang diminta.</span>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Card Footer: Action */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <span className="text-xs text-slate-400">
-                      ID: #{job.id}
-                    </span>
+                  <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-end">
+                    <MatchStamp score={matchResult.score} />
                     <button
                       type="button"
                       disabled={isApplied}
                       onClick={() => onSaveToWishlist(job)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                        isApplied
-                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
-                      }`}
+                      aria-label={isApplied ? 'Sudah Dilamar' : `Simpan ${job.title} di ${job.company_name} ke wishlist`}
+                      className={`${buttonSecondary} min-h-11 px-3 text-xs hover:border-accent hover:text-accent`}
                     >
-                      {isApplied ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Sudah Dilamar</span>
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Simpan ke Wishlist</span>
-                        </>
-                      )}
+                      {isApplied ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                      {isApplied ? 'Sudah Dilamar' : 'Simpan ke Wishlist'}
                     </button>
                   </div>
                 </div>
-              );
-            })}
+              </article>
+            ))}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </section>
   );
 };

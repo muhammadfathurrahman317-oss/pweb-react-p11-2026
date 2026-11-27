@@ -20,13 +20,13 @@ export const detectInterviewConflicts = (
 
       if (isNaN(time1) || isNaN(time2)) continue;
 
-      const diffMinutes = Math.round(Math.abs(time1 - time2) / (1000 * 60));
+      const exactDiffMinutes = Math.abs(time1 - time2) / (1000 * 60);
 
-      if (diffMinutes < 60) {
+      if (exactDiffMinutes < 60) {
         conflicts.push({
           app1,
           app2,
-          diffMinutes,
+          diffMinutes: Math.round(exactDiffMinutes),
         });
       }
     }

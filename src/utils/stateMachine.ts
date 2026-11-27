@@ -5,7 +5,7 @@ export const VALID_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> =
   APPLIED: ['SCREENING', 'REJECTED', 'GHOSTED'],
   SCREENING: ['INTERVIEW', 'REJECTED', 'GHOSTED'],
   INTERVIEW: ['OFFER', 'REJECTED', 'GHOSTED'],
-  GHOSTED: ['SCREENING', 'REJECTED'],
+  GHOSTED: ['SCREENING'],
   OFFER: [],
   REJECTED: [],
 };
@@ -68,7 +68,12 @@ export const validateTransitionRequirements = (
   }
 
   if (targetStatus === 'OFFER') {
-    if (data.salaryOffer === undefined || data.salaryOffer === null || data.salaryOffer <= 0) {
+    if (
+      data.salaryOffer === undefined ||
+      data.salaryOffer === null ||
+      !Number.isFinite(data.salaryOffer) ||
+      data.salaryOffer <= 0
+    ) {
       return { valid: false, errorMessage: 'Nominal gaji/uang saku (salaryOffer) wajib lebih dari 0 untuk status OFFER.' };
     }
     if (!data.workMode || data.workMode.trim() === '') {

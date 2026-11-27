@@ -25,10 +25,13 @@ export const calculateSkillMatch = (
   const matchedSkills: string[] = [];
   const missingSkills: string[] = [];
 
+  const seen = new Set<string>();
   for (const reqSkill of requiredSkills) {
     const trimmed = reqSkill.trim();
-    if (!trimmed) continue;
-    if (normalizedUserSkills.has(trimmed.toLowerCase())) {
+    const key = trimmed.toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    if (normalizedUserSkills.has(key)) {
       matchedSkills.push(trimmed);
     } else {
       missingSkills.push(trimmed);
@@ -54,33 +57,4 @@ export const getMatchTier = (score: number): MatchTier => {
   if (score >= 70) return 'high';
   if (score >= 40) return 'medium';
   return 'low';
-};
-
-export const getMatchBadgeColors = (
-  score: number
-): { bg: string; text: string; border: string; dot: string } => {
-  const tier = getMatchTier(score);
-  switch (tier) {
-    case 'high':
-      return {
-        bg: 'bg-emerald-50 dark:bg-emerald-950/40',
-        text: 'text-emerald-700 dark:text-emerald-300',
-        border: 'border-emerald-200 dark:border-emerald-800',
-        dot: 'bg-emerald-500',
-      };
-    case 'medium':
-      return {
-        bg: 'bg-amber-50 dark:bg-amber-950/40',
-        text: 'text-amber-700 dark:text-amber-300',
-        border: 'border-amber-200 dark:border-amber-800',
-        dot: 'bg-amber-500',
-      };
-    case 'low':
-      return {
-        bg: 'bg-rose-50 dark:bg-rose-950/40',
-        text: 'text-rose-700 dark:text-rose-300',
-        border: 'border-rose-200 dark:border-rose-800',
-        dot: 'bg-rose-500',
-      };
-  }
 };

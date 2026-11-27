@@ -1,4 +1,5 @@
 import { JobListing, RemotiveApiResponse } from '../types';
+import fallbackJobs from '../../public/magang-fallback.json';
 
 export const REMOTIVE_API_URL =
   'https://remotive.com/api/remote-jobs?category=software-dev&limit=30';
@@ -44,26 +45,10 @@ export async function fetchJobsFromRemotive(
 export async function fetchJobsFromFallback(
   signal?: AbortSignal
 ): Promise<JobListing[]> {
-  const response = await fetch(FALLBACK_LOCAL_URL, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
-    signal,
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Gagal memuat dataset lokal fallback (Status: ${response.status})`
-    );
+  if (signal?.aborted) {
+    throw new DOMException('The request was aborted.', 'AbortError');
   }
-
-  const data = (await response.json()) as JobListing[];
-  if (!Array.isArray(data)) {
-    throw new Error('Format dataset lokal fallback tidak valid.');
-  }
-
-  return data;
+  return fallbackJobs;
 }
 
 export async function fetchJobs(
