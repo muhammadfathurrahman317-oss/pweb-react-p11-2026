@@ -1,0 +1,137 @@
+[
+  {
+    "id": 1001,
+    "title": "Frontend Engineering Intern (React & TypeScript)",
+    "company_name": "Nusantara Cloud Tech",
+    "category": "Software Development",
+    "candidate_required_location": "Surabaya (Hybrid)",
+    "salary": "Rp 4.500.000",
+    "tags": ["React", "TypeScript", "CSS", "Git", "REST API"]
+  },
+  {
+    "id": 1002,
+    "title": "Full-Stack Web Developer Intern",
+    "company_name": "Garuda FinTech",
+    "category": "Software Development",
+    "candidate_required_location": "Jakarta (Remote)",
+    "salary": "Rp 5.500.000",
+    "tags": ["React", "TypeScript", "PostgreSQL", "Express", "Prisma"]
+  },
+  {
+    "id": 1003,
+    "title": "Software Engineer Intern — Web Platform",
+    "company_name": "Bintang Commerce",
+    "category": "Software Development",
+    "candidate_required_location": "Indonesia (Remote)",
+    "salary": "Rp 6.000.000",
+    "tags": ["React", "TypeScript", "CSS", "Git", "Testing"]
+  },
+  {
+    "id": 1004,
+    "title": "DevOps & Cloud Infrastructure Intern",
+    "company_name": "AwanMerdeka Cloud",
+    "category": "DevOps / Sysadmin",
+    "candidate_required_location": "Jakarta (Remote)",
+    "salary": "Rp 5.200.000",
+    "tags": ["Git", "PostgreSQL", "Linux", "Docker", "CI/CD"]
+  },
+  {
+    "id": 1005,
+    "title": "Junior React Frontend Developer Intern",
+    "company_name": "Kreatif Solusi Digital",
+    "category": "Software Development",
+    "candidate_required_location": "Bandung (Hybrid)",
+    "salary": "Rp 4.000.000",
+    "tags": ["React", "CSS", "Tailwind CSS", "JavaScript"]
+  },
+  {
+    "id": 1006,
+    "title": "Backend Engineering Intern (Go & Node.js)",
+    "company_name": "Tokopay Nusantara",
+    "category": "Software Development",
+    "candidate_required_location": "Jakarta (Onsite)",
+    "salary": "Rp 5.000.000",
+    "tags": ["Go", "Node.js", "PostgreSQL", "Docker", "REST API"]
+  },
+  {
+    "id": 1007,
+    "title": "UI/UX & Design Systems Engineer Intern",
+    "company_name": "Bukalensa Studio",
+    "category": "Design & Frontend",
+    "candidate_required_location": "Yogyakarta (Remote)",
+    "salary": "Rp 4.200.000",
+    "tags": ["React", "TypeScript", "CSS", "Figma", "Tailwind CSS"]
+  },
+  {
+    "id": 1008,
+    "title": "Data Engineering & Analytics Intern",
+    "company_name": "DataCerdas Indonesia",
+    "category": "Data Analysis",
+    "candidate_required_location": "Jakarta (Hybrid)",
+    "salary": "Rp 4.800.000",
+    "tags": ["Python", "SQL", "PostgreSQL", "Git"]
+  },
+  {
+    "id": 1009,
+    "title": "Mobile App Developer Intern (React Native)",
+    "company_name": "RuangGerak Mobile",
+    "category": "Software Development",
+    "candidate_required_location": "Malang (Remote)",
+    "salary": "Rp 4.500.000",
+    "tags": ["React", "TypeScript", "React Native", "Git"]
+  },
+  {
+    "id": 1010,
+    "title": "Quality Assurance & Automation Intern",
+    "company_name": "Sicepat Logistik Tech",
+    "category": "QA / Testing",
+    "candidate_required_location": "Tangerang (Onsite)",
+    "salary": "Rp 4.300.000",
+    "tags": ["Testing", "Jest", "Cypress", "JavaScript", "Git"]
+  },
+  {
+    "id": 1011,
+    "title": "Cybersecurity & Security Operations Intern",
+    "company_name": "Benteng Siber Sentosa",
+    "category": "DevOps / Sysadmin",
+    "candidate_required_location": "Surabaya (Onsite)",
+    "salary": "Rp 5.000.000",
+    "tags": ["Linux", "Python", "Docker", "Network Security"]
+  },
+  {
+    "id": 1012,
+    "title": "AI & Prompt Engineering Intern",
+    "company_name": "Kecerdasan Artifisial ID",
+    "category": "Software Development",
+    "candidate_required_location": "Jakarta (Remote)",
+    "salary": "Rp 6.500.000",
+    "tags": ["Python", "TypeScript", "REST API", "Git"]
+  },
+  {
+    "id": 1013,
+    "title": "Frontend Web Intern (Next.js)",
+    "company_name": "EduSpark Indonesia",
+    "category": "Software Development",
+    "candidate_required_location": "Bandung (Remote)",
+    "salary": "Rp 4.600.000",
+    "tags": ["React", "TypeScript", "Next.js", "CSS", "Tailwind CSS"]
+  },
+  {
+    "id": 1014,
+    "title": "Site Reliability Engineer Intern",
+    "company_name": "Infrastruktur Merah Putih",
+    "category": "DevOps / Sysadmin",
+    "candidate_required_location": "Jakarta (Hybrid)",
+    "salary": "Rp 5.800.000",
+    "tags": ["Linux", "Docker", "Kubernetes", "CI/CD", "Git"]
+  },
+  {
+    "id": 1015,
+    "title": "Junior Full-Stack Intern (Vue & Express)",
+    "company_name": "WarungPintar Modern",
+    "category": "Software Development",
+    "candidate_required_location": "Semarang (Hybrid)",
+    "salary": "Rp 4.100.000",
+    "tags": ["Vue", "Node.js", "Express", "PostgreSQL", "CSS"]
+  }
+]
