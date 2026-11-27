@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Application } from '../../types';
-import { calculateSkillMatch, getMatchBadgeColors } from '../../utils/skillMatch';
+import { calculateSkillMatch } from '../../utils/skillMatch';
 import { isGhostingRisk, getDaysSinceUpdate } from '../../utils/ghosting';
 import { STATUS_LABELS } from '../../utils/stateMachine';
 import { formatDisplayDate, formatDisplayDateTime, formatRupiah } from '../../utils/formatters';
@@ -13,6 +13,9 @@ import {
   Trash2,
   ListChecks,
 } from '../common/Icons';
+import { SectionHeading } from '../common/SectionHeading';
+import { StatusStamp, MatchStamp } from '../common/StatusStamp';
+import { buttonPrimary, buttonSecondary, field, select } from '../common/ui';
 
 interface WarRoomPipelineProps {
   applications: Application[];
@@ -34,39 +37,31 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [onlyGhostingRisk, setOnlyGhostingRisk] = useState<boolean>(false);
-  const [sortBy, setSortBy] = useState<'newest' | 'interview-nearest' | 'offer-highest'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'interview-nearest' | 'offer-highest'>(
+    'newest'
+  );
 
-  // Filter & Sort Applications
   const filteredApplications = useMemo(() => {
     let result = [...applications];
 
-    // 1. Text Search (Company & Role)
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase();
       result = result.filter(
-        (app) =>
-          app.company.toLowerCase().includes(q) ||
-          app.role.toLowerCase().includes(q)
+        (app) => app.company.toLowerCase().includes(q) || app.role.toLowerCase().includes(q)
       );
     }
 
-    // 2. Status Filter
     if (statusFilter !== 'ALL') {
       result = result.filter((app) => app.status === statusFilter);
     }
 
-    // 3. Ghosting Risk Filter
     if (onlyGhostingRisk) {
       result = result.filter((app) => isGhostingRisk(app));
     }
 
-    // 4. Sorting
     result.sort((a, b) => {
       if (sortBy === 'newest') {
-        return (
-          new Date(b.lastUpdatedAt).getTime() -
-          new Date(a.lastUpdatedAt).getTime()
-        );
+        return new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime();
       }
       if (sortBy === 'interview-nearest') {
         const timeA = a.interviewDateTime
@@ -78,9 +73,7 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
         return timeA - timeB;
       }
       if (sortBy === 'offer-highest') {
-        const offerA = a.salaryOffer ?? 0;
-        const offerB = b.salaryOffer ?? 0;
-        return offerB - offerA;
+        return (b.salaryOffer ?? 0) - (a.salaryOffer ?? 0);
       }
       return 0;
     });
@@ -88,98 +81,121 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
     return result;
   }, [applications, searchQuery, statusFilter, onlyGhostingRisk, sortBy]);
 
+  const resetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('ALL');
+    setOnlyGhostingRisk(false);
+    setSortBy('newest');
+  };
+
   return (
-    <div className="space-y-5">
-      {/* Filters & Controls Bar */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        {/* Search Input */}
-        <div className="relative flex-1 min-w-[220px]">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+    <section className="space-y-5">
+      <SectionHeading
+        index="02"
+        title="Pipeline lamaran"
+        description="Satu baris untuk satu lamaran. Status, kesiapan, dan langkah berikutnya terlihat tanpa membuka apa pun."
+        action={
+          <span className="font-mono text-[11px] text-muted">
+            {filteredApplications.length} / {applications.length} entri
+          </span>
+        }
+      />
+
+      <div className="grid gap-3 border-y border-rule py-3 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_170px_180px_190px]">
+        <div className="relative min-w-0">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cari lamaran di pipeline..."
-            className="w-full pl-9 pr-4 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Cari perusahaan atau posisi"
+            aria-label="Cari lamaran"
+            className={`${field} min-h-11 pl-9`}
           />
         </div>
 
-        {/* Status Filter */}
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-3 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Filter status lamaran"
+          className={`${select} min-h-11`}
         >
-          <option value="ALL">Semua Status</option>
-          <option value="WISHLIST">Wishlist</option>
-          <option value="APPLIED">Applied</option>
-          <option value="SCREENING">Screening</option>
-          <option value="INTERVIEW">Interview</option>
-          <option value="OFFER">Offer</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="GHOSTED">Ghosted</option>
+          <option value="ALL">Semua status</option>
+          {Object.entries(STATUS_LABELS).map(([status, label]) => (
+            <option key={status} value={status}>
+              {label}
+            </option>
+          ))}
         </select>
 
-        {/* Ghosting Toggle */}
-        <label className="flex items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-400 cursor-pointer bg-amber-50 dark:bg-amber-950/40 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800/80">
+        <label
+          className={`inline-flex min-h-11 cursor-pointer items-center gap-2 border px-3 text-xs transition-colors ${
+            onlyGhostingRisk
+              ? 'border-warning/60 text-warning'
+              : 'border-border text-muted hover:text-ink'
+          }`}
+        >
           <input
             type="checkbox"
             checked={onlyGhostingRisk}
             onChange={(e) => setOnlyGhostingRisk(e.target.checked)}
-            className="rounded text-amber-600 focus:ring-amber-500 w-4 h-4"
+            className="h-4 w-4 accent-warning"
           />
-          <GhostIcon className="w-3.5 h-3.5" />
-          <span>Hanya Rawan Ghosting</span>
+          <GhostIcon className="h-3.5 w-3.5" />
+          <span>Rawan ghosting</span>
         </label>
 
-        {/* Sorting Dropdown */}
         <select
           value={sortBy}
           onChange={(e) =>
-            setSortBy(
-              e.target.value as 'newest' | 'interview-nearest' | 'offer-highest'
-            )
+            setSortBy(e.target.value as 'newest' | 'interview-nearest' | 'offer-highest')
           }
-          className="px-3 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Urutkan lamaran"
+          className={`${select} min-h-11`}
         >
-          <option value="newest">Terbaru (Last Updated)</option>
-          <option value="interview-nearest">Jadwal Interview Terdekat</option>
-          <option value="offer-highest">Offer Tertinggi</option>
+          <option value="newest">Terbaru diperbarui</option>
+          <option value="interview-nearest">Interview terdekat</option>
+          <option value="offer-highest">Offer tertinggi</option>
         </select>
       </div>
 
-      {/* Applications List */}
       {filteredApplications.length === 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-xl p-12 border border-slate-200 dark:border-slate-800 text-center space-y-3">
-          <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
-            <Briefcase className="w-6 h-6" />
-          </div>
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
-            Tidak Ada Lamaran Ditemukan
+        <div className="border border-rule bg-surface px-6 py-12 text-center">
+          <Briefcase className="mx-auto h-8 w-8 text-muted" />
+          <h3 className="mt-4 font-display text-xl text-ink">
+            {applications.length === 0 ? 'Buku lamaran masih kosong' : 'Tidak ada entri yang cocok'}
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted">
             {applications.length === 0
-              ? 'Belum ada lamaran di pipeline. Simpan lowongan dari katalog atau catat manual!'
-              : 'Tidak ada lamaran yang cocok dengan kriteria pencarian dan filter saat ini.'}
+              ? 'Mulai dari satu lamaran. Begitu tercatat, pipeline ini yang mengingatkan langkah berikutnya.'
+              : 'Kata kunci atau filter saat ini tidak menemukan lamaran. Coba longgarkan filternya.'}
           </p>
-          {applications.length === 0 && (
+          {applications.length === 0 ? (
             <button
+              type="button"
               onClick={onOpenAddModal}
-              className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-xs"
+              className={`${buttonPrimary} mt-5`}
             >
-              + Catat Lamaran Pertama
+              Catat lamaran pertama
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className={`${buttonSecondary} mt-5`}
+            >
+              Bersihkan filter
             </button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredApplications.map((app) => {
+        <div className="border-t border-ink/25">
+          {filteredApplications.map((app, index) => {
             const match = calculateSkillMatch(kaptenSkills, app.requiredSkills);
-            const badgeColors = getMatchBadgeColors(match.score);
             const hasGhostingRisk = isGhostingRisk(app);
             const daysInactive = getDaysSinceUpdate(app.lastUpdatedAt);
 
-            const completedChecklist = app.checklist.filter((i) => i.done).length;
+            const completedChecklist = app.checklist.filter((item) => item.done).length;
             const totalChecklist = app.checklist.length;
             const checklistPercent =
               totalChecklist > 0
@@ -190,151 +206,125 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
               app.status === 'APPLIED' || app.status === 'SCREENING';
 
             return (
-              <div
+              <article
                 key={app.id}
-                className={`bg-white dark:bg-slate-900 rounded-xl p-5 border flex flex-col justify-between shadow-xs transition-all ${
-                  hasGhostingRisk
-                    ? 'border-amber-400 dark:border-amber-600 shadow-amber-500/5'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                className={`border-b border-l-2 border-b-rule py-5 pl-4 pr-1 transition-colors hover:bg-highlight/35 sm:pl-6 ${
+                  hasGhostingRisk ? 'border-l-warning' : 'border-l-transparent'
                 }`}
               >
-                <div className="space-y-3">
-                  {/* Card Header: Company, Status, Workmode */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1 space-y-2.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-[10px] leading-none text-muted">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted">
                         {app.company}
                       </span>
-                      <h4 className="text-base font-bold text-slate-900 dark:text-white leading-snug line-clamp-1">
-                        {app.role}
-                      </h4>
+                      <StatusStamp status={app.status} />
+                      {hasGhostingRisk && (
+                        <span className="inline-flex items-center gap-1 border border-warning/60 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-warning">
+                          <GhostIcon className="h-3 w-3" />
+                          Rawan · {daysInactive} hari
+                        </span>
+                      )}
                     </div>
 
-                    {/* Status Badge */}
-                    <span
-                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                        app.status === 'OFFER'
-                          ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300'
-                          : app.status === 'INTERVIEW'
-                          ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300'
-                          : app.status === 'REJECTED'
-                          ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300'
-                          : app.status === 'GHOSTED'
-                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                          : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'
-                      }`}
-                    >
-                      {STATUS_LABELS[app.status]}
-                    </span>
-                  </div>
+                    <h3 className="font-display text-xl leading-snug text-ink sm:text-2xl">
+                      {app.role}
+                    </h3>
 
-                  {/* Badges row: Skill Match % & Ghosting Alert */}
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {/* Skill Match Badge */}
-                    <span
-                      className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${badgeColors.bg} ${badgeColors.text} ${badgeColors.border}`}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full ${badgeColors.dot}`} />
-                      <span>{match.score}% Match</span>
-                    </span>
-
-                    {/* Work Mode */}
-                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                      {app.workMode}
-                    </span>
-
-                    {/* Ghosting Badge */}
-                    {hasGhostingRisk && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 animate-pulse">
-                        <GhostIcon className="w-3 h-3" />
-                        <span>Rawan Ghosting ({daysInactive}h)</span>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-muted">
+                      <span>{app.workMode}</span>
+                      <MatchStamp score={match.score} />
+                      <span className="font-mono">
+                        Diperbarui {formatDisplayDate(app.lastUpdatedAt)}
                       </span>
-                    )}
-                  </div>
-
-                  {/* Details (CV, Interview, Salary) */}
-                  <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400 pt-1">
-                    {app.cvVersion && (
-                      <div className="flex items-center gap-1.5">
-                        <FileText className="w-3.5 h-3.5 text-slate-400" />
-                        <span>CV: {app.cvVersion}</span>
-                      </div>
-                    )}
-                    {app.interviewDateTime && (
-                      <div className="flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-semibold">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>Wawancara: {formatDisplayDateTime(app.interviewDateTime)}</span>
-                      </div>
-                    )}
-                    {app.salaryOffer && app.salaryOffer > 0 && (
-                      <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
-                        <span>Tawaran: {formatRupiah(app.salaryOffer)} / bulan</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Checklist Mini Progress */}
-                  <div className="pt-2">
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mb-1">
-                      <span className="flex items-center gap-1">
-                        <ListChecks className="w-3 h-3" />
-                        <span>Checklist Persiapan</span>
-                      </span>
-                      <span className="font-semibold">
-                        {completedChecklist}/{totalChecklist} ({checklistPercent}%)
-                      </span>
+                      {app.interviewDateTime && (
+                        <span className="inline-flex items-center gap-1 text-accent">
+                          <Calendar className="h-3 w-3" />
+                          <span className="font-mono">
+                            {formatDisplayDateTime(app.interviewDateTime)}
+                          </span>
+                        </span>
+                      )}
+                      {app.salaryOffer && app.salaryOffer > 0 && (
+                        <span className="font-mono text-success">
+                          {formatRupiah(app.salaryOffer)} / bln
+                        </span>
+                      )}
+                      {app.cvVersion && (
+                        <span className="inline-flex items-center gap-1">
+                          <FileText className="h-3 w-3" />
+                          {app.cvVersion}
+                        </span>
+                      )}
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+
+                    <div className="max-w-sm">
+                      <div className="flex items-center justify-between gap-2 text-[10px] text-muted">
+                        <span className="inline-flex items-center gap-1">
+                          <ListChecks className="h-3 w-3" />
+                          Persiapan
+                        </span>
+                        <span className="font-mono">
+                          {completedChecklist}/{totalChecklist} · {checklistPercent}%
+                        </span>
+                      </div>
                       <div
-                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
-                        style={{ width: `${checklistPercent}%` }}
-                      />
+                        className="mt-1 h-0.5 w-full bg-rule"
+                        role="progressbar"
+                        aria-label={`Progres checklist ${app.role}`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={checklistPercent}
+                      >
+                        <div
+                          className={`h-0.5 ${
+                            checklistPercent === 100 && totalChecklist > 0
+                              ? 'bg-success'
+                              : 'bg-accent'
+                          }`}
+                          style={{ width: `${checklistPercent}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Card Actions */}
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1">
-                  {/* Simulasi +15 Hari Button (Testcase 6) */}
-                  {canSimulateGhosting ? (
-                    <button
-                      type="button"
-                      onClick={() => onSimulateGhosting(app)}
-                      title="Mundurkan tanggal update 15 hari untuk memicu badge Rawan Ghosting"
-                      className="px-2 py-1 rounded text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-800 transition-colors"
-                    >
-                      +15 Hari
-                    </button>
-                  ) : (
-                    <span className="text-[10px] text-slate-400">
-                      Update: {formatDisplayDate(app.lastUpdatedAt)}
-                    </span>
-                  )}
-
-                  <div className="flex items-center gap-1">
+                  <div className="flex shrink-0 flex-wrap items-center gap-1.5 lg:justify-end">
+                    {canSimulateGhosting && (
+                      <button
+                        type="button"
+                        onClick={() => onSimulateGhosting(app)}
+                        title="Mundurkan tanggal update 15 hari untuk menguji peringatan ghosting"
+                        className="inline-flex min-h-11 items-center border border-rule px-2.5 font-mono text-[10px] uppercase tracking-[0.06em] text-warning transition-colors hover:bg-warning/10"
+                      >
+                        +15 hari
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => onDeleteApplication(app)}
-                      title="Hapus Lamaran"
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                      title="Hapus lamaran"
+                      aria-label={`Hapus lamaran ${app.company}`}
+                      className="inline-flex h-11 w-11 items-center justify-center text-muted transition-colors hover:bg-danger/10 hover:text-danger"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
-
                     <button
                       type="button"
                       onClick={() => onOpenDetail(app)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-white shadow-xs transition-colors"
+                      className={`${buttonSecondary} min-h-11 px-3 text-xs`}
                     >
-                      Detail & Kelola
+                      Buka detail
                     </button>
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
       )}
-    </div>
+    </section>
   );
 };

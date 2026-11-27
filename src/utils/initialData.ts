@@ -36,7 +36,7 @@ export const INITIAL_APPLICATIONS: Application[] = [
   {
     id: 'app-init-2',
     company: 'Bintang Commerce',
-    role: 'Software Engineer Intern — Web Platform',
+    role: 'Software Engineer Intern (Web Platform)',
     workMode: 'Remote',
     status: 'OFFER',
     requiredSkills: ['React', 'TypeScript', 'CSS', 'Git', 'Testing'],

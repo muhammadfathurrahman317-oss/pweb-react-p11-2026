@@ -1,6 +1,15 @@
-import React, { useState, useRef } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import { Application, ApplicationStatus, WorkMode } from '../../types';
-import { X, Briefcase, AlertTriangle, Plus } from '../common/Icons';
+import { X, AlertTriangle, Plus } from '../common/Icons';
+import { ModalFrame } from '../common/ModalFrame';
+import {
+  buttonPrimary,
+  buttonSecondary,
+  field,
+  fieldLabel,
+  kicker,
+  select,
+} from '../common/ui';
 
 interface AddApplicationModalProps {
   isOpen: boolean;
@@ -26,34 +35,57 @@ export const AddApplicationModal: React.FC<AddApplicationModalProps> = ({
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Refs for auto-focus on error (Testcase 4 requirement!)
   const companyInputRef = useRef<HTMLInputElement>(null);
   const roleInputRef = useRef<HTMLInputElement>(null);
   const skillsInputRef = useRef<HTMLInputElement>(null);
   const cvInputRef = useRef<HTMLInputElement>(null);
   const appliedDateInputRef = useRef<HTMLInputElement>(null);
 
+  const baseId = useId();
+  const titleId = `${baseId}-title`;
+  const companyId = `${baseId}-company`;
+  const roleId = `${baseId}-role`;
+  const workModeId = `${baseId}-work-mode`;
+  const statusId = `${baseId}-status`;
+  const cvId = `${baseId}-cv`;
+  const appliedDateId = `${baseId}-applied-date`;
+  const skillsId = `${baseId}-skills`;
+  const skillsHelpId = `${baseId}-skills-help`;
+
   if (!isOpen) return null;
+
+  const resetForm = () => {
+    setCompany('');
+    setRole('');
+    setWorkMode('Remote');
+    setStatus('WISHLIST');
+    setSkillsString('');
+    setCvVersion('CV-Kapten-v1.pdf');
+    setAppliedDate(new Date().toISOString().split('T')[0]);
+    setErrorMessage(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    // 1. Validate Company
     if (!company.trim()) {
-      setErrorMessage('Nama Perusahaan wajib diisi.');
+      setErrorMessage('Nama perusahaan wajib diisi.');
       companyInputRef.current?.focus();
       return;
     }
 
-    // 2. Validate Role
     if (!role.trim()) {
-      setErrorMessage('Posisi / Role lamaran wajib diisi.');
+      setErrorMessage('Posisi atau role lamaran wajib diisi.');
       roleInputRef.current?.focus();
       return;
     }
 
-    // 3. Validate Duplicate (Anti-duplikat lamaran: case-insensitive)
     const isDuplicate = existingApplications.some(
       (app) =>
         app.company.trim().toLowerCase() === company.trim().toLowerCase() &&
@@ -62,34 +94,37 @@ export const AddApplicationModal: React.FC<AddApplicationModalProps> = ({
 
     if (isDuplicate) {
       setErrorMessage(
-        `Duplikat! Lamaran untuk "${company}" dengan posisi "${role}" sudah pernah didaftarkan.`
+        `Lamaran untuk "${company}" dengan posisi "${role}" sudah pernah dicatat.`
       );
-      // Auto-focus to company input on duplicate error as per requirement!
       companyInputRef.current?.focus();
       return;
     }
 
-    // 4. Validate Skills
+    const seenSkills = new Set<string>();
     const parsedSkills = skillsString
       .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
+      .map((skill) => skill.trim())
+      .filter((skill) => {
+        const key = skill.toLowerCase();
+        if (!key || seenSkills.has(key)) return false;
+        seenSkills.add(key);
+        return true;
+      });
 
     if (parsedSkills.length === 0) {
-      setErrorMessage('Minimal isi 1 required skill (pisahkan dengan koma).');
+      setErrorMessage('Isi minimal satu skill, pisahkan dengan koma.');
       skillsInputRef.current?.focus();
       return;
     }
 
-    // 5. If Status = APPLIED, validate cvVersion and appliedDate
     if (status === 'APPLIED') {
       if (!cvVersion.trim()) {
-        setErrorMessage('Versi CV wajib diisi jika status awal adalah APPLIED.');
+        setErrorMessage('Versi CV wajib diisi kalau status awalnya Applied.');
         cvInputRef.current?.focus();
         return;
       }
       if (!appliedDate.trim()) {
-        setErrorMessage('Tanggal melamar wajib diisi jika status awal adalah APPLIED.');
+        setErrorMessage('Tanggal melamar wajib diisi kalau status awalnya Applied.');
         appliedDateInputRef.current?.focus();
         return;
       }
@@ -122,90 +157,93 @@ export const AddApplicationModal: React.FC<AddApplicationModalProps> = ({
     };
 
     onAddApplication(newApp);
+    resetForm();
     onClose();
-
-    // Reset Form
-    setCompany('');
-    setRole('');
-    setSkillsString('');
-    setStatus('WISHLIST');
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-8">
-        {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 flex items-center justify-center">
-              <Briefcase className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Catat Lamaran Baru
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Tambah lamaran manual ke War Room Pipeline Kapten
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <ModalFrame
+      onClose={handleClose}
+      labelledBy={titleId}
+      initialFocusRef={companyInputRef}
+      widthClass="max-w-lg"
+    >
+      <div className="flex items-start justify-between gap-4 border-b border-rule px-5 py-4 sm:px-6">
+        <div className="min-w-0">
+          <p className={kicker}>Entri baru</p>
+          <h2 id={titleId} className="mt-1 font-display text-2xl leading-tight text-ink">
+            Catat lamaran
+          </h2>
+          <p className="mt-1 text-xs leading-relaxed text-muted">
+            Satu baris baru di buku lamaranmu. Bisa diubah lagi kapan saja.
+          </p>
         </div>
+        <button
+          type="button"
+          onClick={handleClose}
+          aria-label="Tutup form"
+          className="flex h-11 w-11 shrink-0 items-center justify-center text-muted transition-colors hover:bg-highlight hover:text-ink"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
 
-        {/* Modal Body Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="flex min-h-0 flex-1 flex-col">
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6">
           {errorMessage && (
-            <div className="p-3 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+            <div
+              role="alert"
+              className="flex items-start gap-2 border border-danger/40 px-3 py-2 text-xs leading-relaxed text-danger"
+            >
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
-          {/* Perusahaan */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              Nama Perusahaan <span className="text-rose-500">*</span>
+            <label htmlFor={companyId} className={fieldLabel}>
+              Nama perusahaan <span aria-hidden="true" className="text-danger">*</span>
             </label>
             <input
+              id={companyId}
               ref={companyInputRef}
               type="text"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              placeholder="Contoh: GoTo, Traveloka, Garuda FinTech"
-              className="w-full px-3.5 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="GoTo, Traveloka, Garuda FinTech"
+              required
+              aria-required="true"
+              className={`${field} min-h-11`}
             />
           </div>
 
-          {/* Posisi / Role */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              Posisi / Role <span className="text-rose-500">*</span>
+            <label htmlFor={roleId} className={fieldLabel}>
+              Posisi / role <span aria-hidden="true" className="text-danger">*</span>
             </label>
             <input
+              id={roleId}
               ref={roleInputRef}
               type="text"
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              placeholder="Contoh: Frontend Intern, React Developer"
-              className="w-full px-3.5 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Frontend Intern, React Developer"
+              required
+              aria-required="true"
+              className={`${field} min-h-11`}
             />
           </div>
 
-          {/* Mode Kerja & Status Awal */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Mode Kerja
+              <label htmlFor={workModeId} className={fieldLabel}>
+                Mode kerja
               </label>
               <select
+                id={workModeId}
                 value={workMode}
                 onChange={(e) => setWorkMode(e.target.value as WorkMode)}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`${select} min-h-11`}
               >
                 <option value="Remote">Remote</option>
                 <option value="Hybrid">Hybrid</option>
@@ -214,94 +252,90 @@ export const AddApplicationModal: React.FC<AddApplicationModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Status Awal
+              <label htmlFor={statusId} className={fieldLabel}>
+                Status awal
               </label>
               <select
+                id={statusId}
                 value={status}
-                onChange={(e) =>
-                  setStatus(e.target.value as ApplicationStatus)
-                }
-                className="w-full px-3 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setStatus(e.target.value as ApplicationStatus)}
+                className={`${select} min-h-11`}
               >
-                <option value="WISHLIST">WISHLIST</option>
-                <option value="APPLIED">APPLIED</option>
+                <option value="WISHLIST">Wishlist</option>
+                <option value="APPLIED">Applied</option>
               </select>
             </div>
           </div>
 
-          {/* Conditional Inputs if Status === APPLIED */}
           {status === 'APPLIED' && (
-            <div className="p-3.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 space-y-3">
-              <div className="text-xs font-semibold text-blue-800 dark:text-blue-300">
-                Kelengkapan Status APPLIED:
-              </div>
+            <div className="space-y-3 border border-rule border-l-2 border-l-accent bg-highlight/40 p-3.5">
+              <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
+                Kelengkapan status Applied
+              </p>
+
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Versi CV <span className="text-rose-500">*</span>
+                <label htmlFor={cvId} className={fieldLabel}>
+                  Versi CV <span aria-hidden="true" className="text-danger">*</span>
                 </label>
                 <input
+                  id={cvId}
                   ref={cvInputRef}
                   type="text"
                   value={cvVersion}
                   onChange={(e) => setCvVersion(e.target.value)}
-                  placeholder="Contoh: CV-Kapten-v2.pdf"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="CV-Kapten-v2.pdf"
+                  className={`${field} min-h-11`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Tanggal Melamar <span className="text-rose-500">*</span>
+                <label htmlFor={appliedDateId} className={fieldLabel}>
+                  Tanggal melamar <span aria-hidden="true" className="text-danger">*</span>
                 </label>
                 <input
+                  id={appliedDateId}
                   ref={appliedDateInputRef}
                   type="date"
                   value={appliedDate}
                   onChange={(e) => setAppliedDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`${field} min-h-11`}
                 />
               </div>
             </div>
           )}
 
-          {/* Required Skills */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              Required Skills <span className="text-rose-500">*</span>
+            <label htmlFor={skillsId} className={fieldLabel}>
+              Skill yang diminta <span aria-hidden="true" className="text-danger">*</span>
             </label>
             <input
+              id={skillsId}
               ref={skillsInputRef}
               type="text"
               value={skillsString}
               onChange={(e) => setSkillsString(e.target.value)}
-              placeholder="React, TypeScript, CSS, Docker (pisahkan dengan koma)"
-              className="w-full px-3.5 py-2 text-sm rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="React, TypeScript, CSS, Docker"
+              required
+              aria-required="true"
+              aria-describedby={skillsHelpId}
+              className={`${field} min-h-11`}
             />
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-              Ketik beberapa skill dan pisahkan dengan tanda koma.
+            <p id={skillsHelpId} className="mt-1 text-[11px] leading-relaxed text-muted">
+              Pisahkan dengan koma. Skill ini dipakai untuk menghitung kecocokan.
             </p>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-200 dark:border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-xs flex items-center gap-1.5 transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Simpan Lamaran</span>
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex items-center justify-end gap-2 border-t border-rule bg-surface px-5 py-3 sm:px-6">
+          <button type="button" onClick={handleClose} className={buttonSecondary}>
+            Batal
+          </button>
+          <button type="submit" className={buttonPrimary}>
+            <Plus className="h-4 w-4" />
+            Simpan lamaran
+          </button>
+        </div>
+      </form>
+    </ModalFrame>
   );
 };

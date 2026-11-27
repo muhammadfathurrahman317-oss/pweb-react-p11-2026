@@ -1,4 +1,4 @@
-# Aku Mw Magang — War Room & Job Application Matcher
+# Aku Mw Magang: Buku Kerja Lamaran Magang
 > **Tugas Praktikum Pemrograman Web 2026 (Modul 5)**  
 > **Kelompok: P11**  
 > **Repositori:** `pweb-react-p11-2026`  
@@ -33,10 +33,14 @@ pweb-react-p11-2026/
 │   │   ├── common/
 │   │   │   ├── Header.tsx          # Navigasi tab, dark mode toggle, backup/restore
 │   │   │   ├── Icons.tsx           # Komponen SVG icon modular mandiri
+│   │   │   ├── ModalFrame.tsx      # Dialog aksesibel: Escape, focus trap, scroll lock
+│   │   │   ├── SectionHeading.tsx  # Judul bagian dengan indeks margin
+│   │   │   ├── StatusStamp.tsx     # Stempel status lamaran & kecocokan skill
+│   │   │   ├── ui.ts               # Resep kelas tombol, field, dan sheet
 │   │   │   └── UndoToast.tsx       # Toast 5 detik dengan countdown & pembatalan useRef
 │   │   ├── dashboard/
 │   │   │   ├── ConflictBanner.tsx  # Banner peringatan bentrok jadwal interview (< 60 menit)
-│   │   │   └── StatCards.tsx       # 5 kartu statistik derived state
+│   │   │   └── StatCards.tsx       # 5 sel ringkasan derived state
 │   │   ├── jobs/
 │   │   │   ├── JobExplorer.tsx     # Katalog lowongan, search debounce, filter & sort
 │   │   │   └── KaptenSkillProfile.tsx # Profil skill Kapten & toggle sumber data
@@ -50,23 +54,26 @@ pweb-react-p11-2026/
 │   │       └── InterviewPrepSection.tsx # Countdown timer 02:00 & 5 soal IT interview
 │   ├── hooks/
 │   │   ├── useDebounce.ts          # Custom Hook debounce generik (400ms)
-│   │   └── useLocalStorage.ts      # Custom Hook persistensi localStorage dengan sinkronisasi
+│   │   ├── useJobs.ts              # Fetch lowongan + AbortController (anti race-condition)
+│   │   └── useLocalStorage.ts      # Custom Hook persistensi localStorage + validasi skema
 │   ├── services/
 │   │   └── jobService.ts           # Service fetch data (Remotive Live API + Fallback Lokal)
 │   ├── types/
 │   │   └── index.ts                # TypeScript interfaces & types lengkap (tanpa any)
 │   ├── utils/
+│   │   ├── dataValidation.ts       # Validasi runtime data localStorage & file backup JSON
 │   │   ├── formatters.ts           # Format mata uang Rupiah & datetime Indonesia
 │   │   ├── ghosting.ts             # Logika deteksi rawan ghosting (> 14 hari)
-│   │   ├── initialData.ts          # Dataset awal demo (12 lamaran & skill bawaan Kapten)
+│   │   ├── initialData.ts          # Dataset awal demo (6 lamaran & skill bawaan Kapten)
 │   │   ├── interviewConflict.ts    # Algoritma deteksi bentrok jadwal interview (< 60 menit)
 │   │   ├── offerComparator.ts      # Perhitungan skor berbobot komparator offer
-│   │   ├── skillMatch.ts           # Rumus perhitungan live skill match & badge color tier
+│   │   ├── skillMatch.ts           # Rumus perhitungan live skill match & tier kecocokan
 │   │   └── stateMachine.ts         # Aturan transisi ketat & validasi form state machine
 │   ├── App.tsx                     # State utama, orkestrasi hooks & views
-│   ├── index.css                   # Tailwind v4 import & custom styling
+│   ├── index.css                   # Tailwind v4, token warna terang/gelap, base styles
 │   └── main.tsx                    # Entry point React 19
 ├── index.html                      # Template HTML5
+├── DESIGN.md                       # Arah visual, palet, tipografi, aturan komponen
 ├── package.json                    # Metadata proyek & script perintah
 ├── tsconfig.json                   # Konfigurasi TypeScript strict
 └── vite.config.ts                  # Konfigurasi bundler Vite
@@ -80,7 +87,7 @@ pweb-react-p11-2026/
 - **Profil Skill:** Kapten dapat menambah skill baru dan menghapus skill (default awal: React, TypeScript, CSS, Git, REST API). Dilengkapi validasi penolakan skill duplikat (case-insensitive) dan tersimpan di `localStorage`.
 - **Fetch Data Asinkron:** Mengambil lowongan dari Remotive API menggunakan `useEffect` + `fetch()` + `AbortController` untuk mencegah race-condition/memory leak. Terdapat penanganan lengkap: Loading State (skeleton), Error State (pesan informatif + tombol Coba Lagi & Fallback Lokal), dan Empty State.
 - **Search Debounce & Filter:** Pencarian posisi/perusahaan ditenagai custom hook `useDebounce(keyword, 400)`. Didukung filter kategori lowongan dan opsi pengurutan (Match Tertinggi, Match Terendah, Perusahaan A-Z).
-- **Badge & Aksi:** Match Score % dihitung live (`hijau >= 70%`, `kuning 40–69%`, `merah < 40%`), chip pemisah skill cocok vs missing skills, serta tombol "Simpan ke Wishlist" yang otomatis ter-disable ("Sudah Dilamar") jika posisi tersebut sudah ada di daftar lamaran.
+- **Stempel & Aksi:** Match Score % dihitung live (`hijau >= 70%`, `kuning 40-69%`, `merah < 40%`), penanda skill cocok vs missing skills, serta tombol "Simpan ke Wishlist" yang berubah menjadi stempel "Sudah dilamar" jika posisi tersebut sudah ada di daftar lamaran.
 
 ### 2. Form Tambah Lamaran Manual
 - Form terkontrol penuh (`value` + `onChange`).
@@ -88,10 +95,10 @@ pweb-react-p11-2026/
 - Jika status awal dipilih `APPLIED`, input versi CV (`cvVersion`) dan tanggal melamar (`appliedDate`) otomatis muncul dan wajib diisi.
 - **Validasi & Auto-Focus (`useRef`):** Menolak input kosong dan mendeteksi duplikat pasangan `company + role` (case-insensitive). Jika submit gagal, kursor otomatis berpindah fokus ke elemen input pertama yang mengalami galat menggunakan `useRef`.
 
-### 3. War Room Pipeline, Ghosting & Bentrok Jadwal
-- Tampilan kartu lamaran komprehensif: Company, Role, Status, Versi CV, Jadwal Interview, Progress Checklist, dan Skill Match %.
+### 3. Pipeline Lamaran, Ghosting & Bentrok Jadwal
+- Tampilan ledger lamaran komprehensif: Company, Role, Status, Versi CV, Jadwal Interview, Progress Checklist, dan Skill Match %.
 - Filter gabungan: Pencarian teks, filter status lamaran, toggle "Hanya Rawan Ghosting", dan sorting (Terbaru, Jadwal Interview Terdekat, Offer Tertinggi).
-- **Simulasi +15 Hari:** Tombol `+15 Hari` pada kartu lamaran berstatus APPLIED dan SCREENING untuk memundurkan `lastUpdatedAt` sebanyak 15 hari ke belakang agar badge "Rawan Ghosting (> 14 hari)" dan kenaikan kartu statistik dapat langsung diuji saat demo.
+- **Simulasi +15 Hari:** Tombol `+15 Hari` pada entri lamaran berstatus APPLIED dan SCREENING untuk memundurkan `lastUpdatedAt` sebanyak 15 hari ke belakang agar stempel "Rawan Ghosting (> 14 hari)" dan kenaikan sel ringkasan dapat langsung diuji saat demo.
 - **Banner Bentrok Jadwal:** Jika terdapat 2 atau lebih lamaran berstatus INTERVIEW dengan selisih jadwal < 60 menit, banner peringatan menyala di bagian paling atas halaman dan tetap tampil meskipun filter sedang aktif.
 
 ### 4. Detail Lamaran: State Machine, Checklist & Activity Log
@@ -100,7 +107,7 @@ pweb-react-p11-2026/
   - `APPLIED ➔ SCREENING | REJECTED | GHOSTED`
   - `SCREENING ➔ INTERVIEW | REJECTED | GHOSTED`
   - `INTERVIEW ➔ OFFER | REJECTED | GHOSTED`
-  - `GHOSTED ➔ SCREENING | REJECTED` (khusus GHOSTED diizinkan kembali ke SCREENING)
+  - `GHOSTED ➔ SCREENING` (khusus GHOSTED diizinkan kembali ke SCREENING)
   - `OFFER` & `REJECTED` bersifat final (tidak ada transisi lanjutan).
 - Input kondisional saat transisi:
   - Pindah ke `APPLIED`: wajib melengkapi `cvVersion` & `appliedDate`.
@@ -121,10 +128,10 @@ pweb-react-p11-2026/
 - **Persistensi Penuh:** State `applications` dan `kaptenSkills` disimpan menggunakan custom hook `useLocalStorage<T>` sehingga data tidak hilang saat browser di-refresh.
 
 ### 7. Dashboard Statistik & Offer Comparator
-- **5 Kartu Statistik (Derived State):**
+- **5 Sel Ringkasan (Derived State):**
   1. *Total Lamaran* (jumlah seluruh data)
-  2. *Response Rate %* ($\frac{\text{Diproses}}{\text{Total}} \times 100\%$, status bukan WISHLIST)
-  3. *Interview Rate %* ($\frac{\text{Interview + Offer}}{\text{Total}} \times 100\%$)
+  2. *Response Rate %* ($\frac{\text{Lamaran yang mendapat respons}}{\text{Lamaran terkirim}} \times 100\%$; penolakan termasuk respons, riwayat tetap dihitung)
+  3. *Interview Rate %* ($\frac{\text{Pernah mencapai Interview}}{\text{Lamaran terkirim}} \times 100\%$; termasuk yang kini OFFER atau REJECTED)
   4. *Rawan Ghosting* (lamaran APPLIED/SCREENING tidak ter-update > 14 hari)
   5. *Total Offer* (jumlah status OFFER)
   *(Seluruh nilai dihitung langsung sebagai derived state tanpa `useState` terpisah)*.
@@ -132,10 +139,10 @@ pweb-react-p11-2026/
   - Jika lamaran berstatus OFFER < 2: menampilkan pesan edukatif dan panduan cara menguji fitur.
   - Jika OFFER $\ge 2$: Kapten dapat memilih Offer A dan Offer B untuk membandingkan:
     - **Uang Saku / Bulan (Bobot 50%):** $\frac{\text{Gaji}}{\text{Max Gaji}} \times 50$
-    - **Mode Kerja (Bobot 25%):** Remote = $100 \times 25\% = 25.0$, Hybrid = $75 \times 25\% = 18.8$, Onsite = $50 \times 25\% = 12.5$
-    - **Kecocokan Skill (Bobot 25%):** $\text{Skill Match \%} \times 25\%$
-    - **Total Skor Berbobot:** Jumlah ketiga komponen (skor maksimal 100).
-    - Badge **"Rekomendasi Terbaik"** disematkan otomatis pada penawaran dengan skor tertinggi.
+    - **Mode Kerja (Bobot 25%):** Remote = $100 \times 25\% = 25$, Hybrid = $75 \times 25\% = 18.75$, Onsite = $50 \times 25\% = 12.5$
+    - **Kecocokan Skill (Bobot 25%):** $\frac{\text{Skill cocok}}{\text{Skill dibutuhkan}} \times 25$ (presisi penuh)
+    - **Total Skor Berbobot:** Jumlah ketiga komponen (skor maksimal 100), hanya total akhir ditampilkan dengan satu desimal.
+    - Stempel **"Rekomendasi"** disematkan otomatis pada penawaran dengan skor tertinggi.
 
 ---
 
@@ -151,16 +158,16 @@ pweb-react-p11-2026/
 
 | No | Skenario | Langkah Pengujian | Hasil yang Diharapkan | Status |
 |:--:|:---|:---|:---|:---:|
-| **1** | **Fetch & Offline Error** | Buka tab Lowongan. Buka DevTools ➔ Network: *Offline*, lalu klik tombol *Coba Lagi* atau toggle sumber data. | Muncul indikator Loading, disusul pesan error informatif serta tombol *Coba Lagi* dan *Gunakan Fallback Lokal*. |  Lolos |
-| **2** | **Skill Match Live** | Tambahkan skill baru `Docker` pada box *Profil Skill Kapten*. | Persentase Match pada seluruh lowongan yang mensyaratkan Docker (misal: DevOps & Cloud Infrastructure) langsung naik secara real-time. |  Lolos |
-| **3** | **Debounce Search** | Ketik cepat nama posisi atau perusahaan di input pencarian. | State pencarian tidak memicu re-filter seketika di setiap ketikan, melainkan menunggu jeda ~400ms setelah pengetikan berhenti. |  Lolos |
-| **4** | **Anti-Duplikat & Focus** | Simpan lowongan yang sudah ada atau ketik company + role yang sama di Form Manual lalu klik submit. | Pada lowongan katalog, tombol disabled bertuliskan "Sudah Dilamar". Pada form manual, ditolak dengan pesan error dan kursor otomatis auto-focus ke input company via `useRef`. |  Lolos |
-| **5** | **State Machine** | Buka detail lamaran WISHLIST, coba alihkan status langsung ke OFFER (tidak ada opsi). Pindahkan bertahap ke APPLIED ➔ SCREENING ➔ INTERVIEW. | Hanya tombol status yang valid yang muncul. Saat memilih APPLIED wajib isi CV & tanggal; saat INTERVIEW wajib isi jadwal wawancara. |  Lolos |
-| **6** | **Simulasi Ghosting** | Klik tombol `+15 Hari` pada salah satu lamaran APPLIED atau SCREENING di War Room Pipeline. | Nilai `lastUpdatedAt` mundur 15 hari, badge "Rawan Ghosting (> 14 hari)" langsung aktif menyala, dan angka pada kartu statistik bertambah 1. |  Lolos |
-| **7** | **Bentrok Interview** | Ubah status 2 lamaran menjadi INTERVIEW dengan selisih jam jadwal < 60 menit (misal: 10:00 dan 10:30). | Banner Peringatan Bentrok muncul di bagian atas halaman dengan rincian kedua perusahaan dan selisih menitnya. Banner tetap tampil meski filter status lain dipilih. |  Lolos |
-| **8** | **Checklist & Refresh** | Buka detail lamaran, tambah 2 tugas persiapan, centang 1 tugas, lalu tekan refresh halaman (F5). | Seluruh data checklist, status centang, dan progress bar $X/Y$ tetap tersimpan utuh berkat custom hook `useLocalStorage`. |  Lolos |
-| **9** | **Timer Cleanup** | Buka Latihan Interview, klik Mulai timer 02:00, lalu tutup modal sebelum waktu habis dan buka kembali. | Tidak ada error kebocoran memori pada console browser, dan detik timer berjalan normal (tidak bergerak 2x lebih cepat). |  Lolos |
-| **10** | **Undo & Comparator** | Hapus 1 lamaran, lalu klik tombol *Undo* pada Toast dalam kurun < 5 detik. Setelah itu pastikan minimal ada 2 lamaran berstatus OFFER dan buka tab *Bandingkan Offer*. | Lamaran kembali utuh ke pipeline saat Undo diklik. Pada tab komparator, skor normalisasi gaji, mode kerja, dan skill match dihitung akurat dengan penanda "Rekomendasi Terbaik". |  Lolos |
+| **1** | **Fetch & Offline Error** | Buka tab Lowongan. Buka DevTools ➔ Network: *Offline*, lalu klik tombol *Coba Lagi* atau toggle sumber data. | Muncul indikator Loading, disusul pesan error informatif serta tombol *Coba Lagi* dan *Gunakan Fallback Lokal*. | Browser: lolos |
+| **2** | **Skill Match Live** | Tambahkan skill baru `Docker` pada box *Profil Skill Kapten*. | Persentase Match pada seluruh lowongan yang mensyaratkan Docker (misal: DevOps & Cloud Infrastructure) langsung naik secara real-time. | Browser: lolos |
+| **3** | **Debounce Search** | Ketik cepat nama posisi atau perusahaan di input pencarian. | State pencarian tidak memicu re-filter seketika di setiap ketikan, melainkan menunggu jeda ~400ms setelah pengetikan berhenti. | Browser: lolos |
+| **4** | **Anti-Duplikat & Focus** | Simpan lowongan yang sudah ada atau ketik company + role yang sama di Form Manual lalu klik submit. | Pada lowongan katalog, tombol disabled bertuliskan "Sudah Dilamar". Pada form manual, ditolak dengan pesan error dan kursor otomatis auto-focus ke input company via `useRef`. | Browser: lolos |
+| **5** | **State Machine** | Buka detail lamaran WISHLIST, coba alihkan status langsung ke OFFER (tidak ada opsi). Pindahkan bertahap ke APPLIED ➔ SCREENING ➔ INTERVIEW. | Hanya tombol status yang valid yang muncul. Saat memilih APPLIED wajib isi CV & tanggal; saat INTERVIEW wajib isi jadwal wawancara. | Browser: WISHLIST ➔ APPLIED ➔ SCREENING ➔ INTERVIEW ➔ OFFER, validasi jadwal/gaji diuji |
+| **6** | **Simulasi Ghosting** | Klik tombol `+15 Hari` pada salah satu lamaran APPLIED atau SCREENING di Pipeline Lamaran. | Nilai `lastUpdatedAt` mundur 15 hari, stempel "Rawan Ghosting (> 14 hari)" langsung aktif, dan angka pada sel ringkasan bertambah 1. | Browser: stempel aktif, hitungan rawan 2 ➔ 3, tanggal diperbarui mundur 15 hari |
+| **7** | **Bentrok Interview** | Ubah status 2 lamaran menjadi INTERVIEW dengan selisih jam jadwal < 60 menit (misal: 10:00 dan 10:30). | Banner Peringatan Bentrok muncul di bagian atas halaman dengan rincian kedua perusahaan dan selisih menitnya. Banner tetap tampil meski filter status lain dipilih. | Browser: lolos (data interview disiapkan di localStorage) |
+| **8** | **Checklist & Refresh** | Buka detail lamaran, tambah 2 tugas persiapan, centang 1 tugas, lalu tekan refresh halaman (F5). | Seluruh data checklist, status centang, dan progress bar $X/Y$ tetap tersimpan utuh berkat custom hook `useLocalStorage`. | Browser: lolos |
+| **9** | **Timer Cleanup** | Buka Latihan Interview, klik Mulai timer 02:00, lalu tutup modal sebelum waktu habis dan buka kembali. | Tidak ada error kebocoran memori pada console browser, dan detik timer berjalan normal (tidak bergerak 2x lebih cepat). | Browser: 01:57 setelah 3 detik, reset 02:00 saat dibuka kembali, lalu 01:57 setelah 3 detik; console belum diperiksa |
+| **10** | **Undo & Comparator** | Hapus 1 lamaran, lalu klik tombol *Undo* pada Toast dalam kurun < 5 detik. Setelah itu pastikan minimal ada 2 lamaran berstatus OFFER dan buka tab *Bandingkan Offer*. | Lamaran kembali utuh ke pipeline saat Undo diklik. Pada tab komparator, skor normalisasi gaji, mode kerja, dan skill match dihitung akurat dengan penanda "Rekomendasi Terbaik". | Browser: Undo memulihkan checklist dan log; skor 95,0 vs 81,3 sesuai bobot 50/25/25 |
 
 ---
 

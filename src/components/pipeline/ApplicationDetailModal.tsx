@@ -1,10 +1,7 @@
-import React, { useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
+import { Application, ApplicationStatus, WorkMode } from '../../types';
 import {
-  Application,
-  ApplicationStatus,
-  WorkMode,
-} from '../../types';
-import {
+  canTransition,
   getNextStatuses,
   STATUS_LABELS,
   validateTransitionRequirements,
@@ -22,6 +19,18 @@ import {
   MessageSquare,
   ListChecks,
 } from '../common/Icons';
+import { ModalFrame } from '../common/ModalFrame';
+import { StatusStamp } from '../common/StatusStamp';
+import {
+  buttonDanger,
+  buttonGhost,
+  buttonPrimary,
+  buttonSecondary,
+  field,
+  fieldLabel,
+  kicker,
+  select,
+} from '../common/ui';
 
 interface ApplicationDetailModalProps {
   application: Application | null;
@@ -38,33 +47,56 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
   onUpdateApplication,
   onDeleteApplication,
 }) => {
-  // Active Tab: 'workflow' (State + Checklist + Logs) or 'interview' (Prep Timer)
   const [activeTab, setActiveTab] = useState<'workflow' | 'interview'>('workflow');
 
-  // State Transition state
   const [selectedNextStatus, setSelectedNextStatus] = useState<ApplicationStatus | null>(null);
-  const [cvVersion, setCvVersion] = useState<string>('CV-Kapten-v2.pdf');
-  const [appliedDate, setAppliedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
+  const [cvVersion, setCvVersion] = useState<string>(
+    application?.cvVersion ?? 'CV-Kapten-v2.pdf'
   );
-  const [interviewDateTime, setInterviewDateTime] = useState<string>('');
-  const [salaryOffer, setSalaryOffer] = useState<string>('');
-  const [workMode, setWorkMode] = useState<WorkMode>('Remote');
+  const [appliedDate, setAppliedDate] = useState<string>(
+    application?.appliedDate ?? new Date().toISOString().split('T')[0]
+  );
+  const [interviewDateTime, setInterviewDateTime] = useState<string>(
+    application?.interviewDateTime ?? ''
+  );
+  const [salaryOffer, setSalaryOffer] = useState<string>(
+    application?.salaryOffer !== undefined && application.salaryOffer > 0
+      ? String(application.salaryOffer)
+      : ''
+  );
+  const [workMode, setWorkMode] = useState<WorkMode>(application?.workMode ?? 'Remote');
   const [transitionError, setTransitionError] = useState<string | null>(null);
 
-  // Nested Checklist input
   const [newChecklistText, setNewChecklistText] = useState<string>('');
-
-  // Manual note input
   const [manualNote, setManualNote] = useState<string>('');
+
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const baseId = useId();
+  const titleId = `${baseId}-title`;
+  const panelId = `${baseId}-panel`;
+  const tabWorkflowId = `${baseId}-tab-workflow`;
+  const tabInterviewId = `${baseId}-tab-interview`;
+  const cvId = `${baseId}-cv`;
+  const appliedDateId = `${baseId}-applied-date`;
+  const interviewId = `${baseId}-interview`;
+  const salaryId = `${baseId}-salary`;
+  const offerWorkModeId = `${baseId}-offer-work-mode`;
+  const checklistInputId = `${baseId}-checklist`;
+  const noteInputId = `${baseId}-note`;
 
   if (!isOpen || !application) return null;
 
   const validNextStatuses = getNextStatuses(application.status);
 
-  // Handle Status Transition
   const handleTransitionSubmit = () => {
     if (!selectedNextStatus) return;
+
+    if (!canTransition(application.status, selectedNextStatus)) {
+      setTransitionError(
+        `Transisi dari ${STATUS_LABELS[application.status]} ke ${STATUS_LABELS[selectedNextStatus]} tidak diizinkan.`
+      );
+      return;
+    }
 
     const validation = validateTransitionRequirements(selectedNextStatus, {
       cvVersion,
@@ -79,8 +111,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
       return;
     }
 
-    // Build log message
-    let logMsg = `Status berubah: ${application.status} ➔ ${selectedNextStatus}`;
+    let logMsg = `Status berubah: ${application.status} menjadi ${selectedNextStatus}`;
     if (selectedNextStatus === 'APPLIED') {
       logMsg = `Pindah ke APPLIED (CV: ${cvVersion}, Tgl: ${appliedDate})`;
     } else if (selectedNextStatus === 'INTERVIEW') {
@@ -95,7 +126,6 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
       logMsg = 'Dipulihkan dari GHOSTED kembali ke SCREENING';
     }
 
-    // Update immutably
     const updated: Application = {
       ...application,
       status: selectedNextStatus,
@@ -110,10 +140,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
         selectedNextStatus === 'OFFER'
           ? parseFloat(salaryOffer)
           : application.salaryOffer,
-      workMode:
-        selectedNextStatus === 'OFFER'
-          ? workMode
-          : application.workMode,
+      workMode: selectedNextStatus === 'OFFER' ? workMode : application.workMode,
       activityLogs: [
         {
           id: `log-${Date.now()}`,
@@ -129,19 +156,15 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     setTransitionError(null);
   };
 
-  // IMMUTABLE Nested Checklist Operations
   const handleToggleChecklist = (id: string) => {
     const updatedChecklist = application.checklist.map((item) =>
       item.id === id ? { ...item, done: !item.done } : item
     );
 
-    const updated: Application = {
+    onUpdateApplication({
       ...application,
       checklist: updatedChecklist,
-      lastUpdatedAt: new Date().toISOString(),
-    };
-
-    onUpdateApplication(updated);
+    });
   };
 
   const handleAddChecklistItem = (e: React.FormEvent) => {
@@ -149,469 +172,526 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
     const trimmed = newChecklistText.trim();
     if (!trimmed) return;
 
-    const newItem = {
-      id: `chk-${Date.now()}`,
-      text: trimmed,
-      done: false,
-    };
-
-    // Strictly immutable update
-    const updated: Application = {
+    onUpdateApplication({
       ...application,
-      checklist: [...application.checklist, newItem],
-      lastUpdatedAt: new Date().toISOString(),
-    };
-
-    onUpdateApplication(updated);
+      checklist: [
+        ...application.checklist,
+        { id: `chk-${Date.now()}`, text: trimmed, done: false },
+      ],
+    });
     setNewChecklistText('');
   };
 
   const handleDeleteChecklistItem = (id: string) => {
-    const updatedChecklist = application.checklist.filter((item) => item.id !== id);
-
-    const updated: Application = {
+    onUpdateApplication({
       ...application,
-      checklist: updatedChecklist,
-      lastUpdatedAt: new Date().toISOString(),
-    };
-
-    onUpdateApplication(updated);
+      checklist: application.checklist.filter((item) => item.id !== id),
+    });
   };
 
-  // Add Manual Note to Activity Log
   const handleAddManualNote = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = manualNote.trim();
     if (!trimmed) return;
 
-    const newLog = {
-      id: `log-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      message: `[Catatan Kapten]: ${trimmed}`,
-    };
-
-    const updated: Application = {
+    onUpdateApplication({
       ...application,
-      activityLogs: [newLog, ...application.activityLogs],
-      lastUpdatedAt: new Date().toISOString(),
-    };
-
-    onUpdateApplication(updated);
+      activityLogs: [
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          message: `[Catatan Kapten]: ${trimmed}`,
+        },
+        ...application.activityLogs,
+      ],
+    });
     setManualNote('');
   };
 
-  const completedCount = application.checklist.filter((i) => i.done).length;
+  const completedCount = application.checklist.filter((item) => item.done).length;
   const totalCount = application.checklist.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  // Pipeline stages for visual indicator
   const stages: ApplicationStatus[] = ['WISHLIST', 'APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER'];
+  const stageIndex = stages.indexOf(application.status);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-6 flex flex-col max-h-[92vh]">
-        {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between bg-slate-50/50 dark:bg-slate-800/40">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300">
+    <ModalFrame
+      onClose={onClose}
+      labelledBy={titleId}
+      initialFocusRef={closeButtonRef}
+      widthClass="max-w-4xl"
+    >
+      <div className="border-b border-rule px-5 py-4 sm:px-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={kicker}>Lembar lamaran</span>
+              <StatusStamp status={application.status} />
+              <span className="border border-rule px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-muted">
                 {application.workMode}
               </span>
-              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300">
-                Status: {STATUS_LABELS[application.status]}
-              </span>
               {application.salaryOffer && application.salaryOffer > 0 && (
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300">
+                <span className="font-mono text-[10px] text-success">
                   {formatRupiah(application.salaryOffer)}
                 </span>
               )}
             </div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-1">
+
+            <h2
+              id={titleId}
+              className="mt-2 font-display text-2xl leading-tight text-ink sm:text-3xl"
+            >
               {application.role}
             </h2>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                <Briefcase className="w-3.5 h-3.5" />
+
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
+              <span className="inline-flex items-center gap-1 font-medium text-ink/80">
+                <Briefcase className="h-3.5 w-3.5" />
                 {application.company}
               </span>
               {application.cvVersion && (
-                <span className="flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5" />
-                  CV: {application.cvVersion}
+                <span className="inline-flex items-center gap-1">
+                  <FileText className="h-3.5 w-3.5" />
+                  {application.cvVersion}
                 </span>
               )}
               {application.interviewDateTime && (
-                <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium">
-                  <Clock className="w-3.5 h-3.5" />
-                  Jadwal: {formatDisplayDateTime(application.interviewDateTime)}
+                <span className="inline-flex items-center gap-1 text-accent">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span className="font-mono">
+                    {formatDisplayDateTime(application.interviewDateTime)}
+                  </span>
                 </span>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1">
             <button
+              type="button"
               onClick={() => {
                 onDeleteApplication(application);
                 onClose();
               }}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-800/80 flex items-center gap-1 transition-colors"
+              className={`${buttonDanger} min-h-11 text-xs`}
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Hapus Lamaran</span>
+              <Trash2 className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Hapus</span>
             </button>
             <button
+              type="button"
+              ref={closeButtonRef}
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label="Tutup detail lamaran"
+              className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:bg-highlight hover:text-ink"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Tab Switcher */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6">
-          <button
-            onClick={() => setActiveTab('workflow')}
-            className={`py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors ${
-              activeTab === 'workflow'
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <ListChecks className="w-4 h-4" />
-            <span>Workflow & Checklist</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('interview')}
-            className={`py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors ${
-              activeTab === 'interview'
-                ? 'border-purple-600 text-purple-600 dark:text-purple-400'
-                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            <span>Latihan Interview (Timer)</span>
-          </button>
-        </div>
+      <div
+        role="tablist"
+        aria-label="Bagian detail lamaran"
+        className="flex border-b border-rule px-5 sm:px-6"
+      >
+        <button
+          type="button"
+          role="tab"
+          id={tabWorkflowId}
+          aria-selected={activeTab === 'workflow'}
+          aria-controls={panelId}
+          onClick={() => setActiveTab('workflow')}
+          className={`-mb-px mr-5 inline-flex min-h-11 items-center gap-2 border-b-2 text-xs font-medium transition-colors sm:text-sm ${
+            activeTab === 'workflow'
+              ? 'border-accent text-ink'
+              : 'border-transparent text-muted hover:text-ink'
+          }`}
+        >
+          <ListChecks className="h-4 w-4" />
+          Workflow & checklist
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id={tabInterviewId}
+          aria-selected={activeTab === 'interview'}
+          aria-controls={panelId}
+          onClick={() => setActiveTab('interview')}
+          className={`-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 text-xs font-medium transition-colors sm:text-sm ${
+            activeTab === 'interview'
+              ? 'border-accent text-ink'
+              : 'border-transparent text-muted hover:text-ink'
+          }`}
+        >
+          <Clock className="h-4 w-4" />
+          Latihan interview
+        </button>
+      </div>
 
-        {/* Modal Scrollable Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
-          {activeTab === 'interview' ? (
-            <InterviewPrepSection />
-          ) : (
-            <>
-              {/* 1. Tahap Seleksi & State Machine Stepper */}
-              <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-5 border border-slate-200 dark:border-slate-800 space-y-4">
-                <div className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  Tahap Seleksi Lamaran
-                </div>
+      <div
+        role="tabpanel"
+        id={panelId}
+        aria-labelledby={activeTab === 'workflow' ? tabWorkflowId : tabInterviewId}
+        className="flex-1 overflow-y-auto p-5 sm:p-6"
+      >
+        {activeTab === 'interview' ? (
+          <InterviewPrepSection />
+        ) : (
+          <div className="space-y-6">
+            <section className="border border-rule bg-surface">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule px-4 py-3">
+                <p className={kicker}>Tahap seleksi</p>
+                {stageIndex === -1 && (
+                  <span className="text-[10px] text-muted">
+                    Di luar jalur utama: {STATUS_LABELS[application.status]}
+                  </span>
+                )}
+              </div>
 
-                {/* Visual Pipeline Bar */}
-                <div className="grid grid-cols-5 gap-1.5 text-center">
-                  {stages.map((stage, idx) => {
-                    const isCurrent = application.status === stage;
-                    const stageIndex = stages.indexOf(application.status);
-                    const isPassed = stageIndex > idx;
+              <div className="grid grid-cols-5">
+                {stages.map((stage, index) => {
+                  const isCurrent = application.status === stage;
+                  const isPassed = stageIndex > index;
 
-                    return (
-                      <div
-                        key={stage}
-                        className={`py-2 px-1 rounded-lg text-xs font-semibold transition-all ${
+                  return (
+                    <div
+                      key={stage}
+                      aria-current={isCurrent ? 'step' : undefined}
+                      className={`border-r border-rule px-2 py-3 last:border-r-0 sm:px-3 ${
+                        isCurrent ? 'bg-highlight' : ''
+                      }`}
+                    >
+                      <span
+                        className={`font-mono text-[10px] ${
                           isCurrent
-                            ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-300 dark:ring-blue-800'
+                            ? 'text-accent'
                             : isPassed
-                            ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'
+                            ? 'text-success'
+                            : 'text-muted'
                         }`}
                       >
-                        <div>{idx + 1}. {STATUS_LABELS[stage]}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Status Transitions Form */}
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60">
-                  {validNextStatuses.length === 0 ? (
-                    <div className="text-xs text-slate-500 italic">
-                      Status ini bersifat final ({application.status}). Tidak ada transisi lanjutan.
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <div
+                        className={`mt-1 h-0.5 w-full ${
+                          isCurrent ? 'bg-accent' : isPassed ? 'bg-success' : 'bg-rule'
+                        }`}
+                      />
+                      <span
+                        className={`mt-2 block text-[10px] uppercase leading-tight tracking-[0.04em] ${
+                          isCurrent
+                            ? 'text-ink'
+                            : isPassed
+                            ? 'text-ink/70'
+                            : 'text-muted'
+                        }`}
+                      >
+                        {STATUS_LABELS[stage]}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                          Pindahkan status ke:
-                        </span>
-                        {validNextStatuses.map((st) => (
-                          <button
-                            key={st}
-                            type="button"
-                            onClick={() => {
-                              setSelectedNextStatus(st);
-                              setTransitionError(null);
-                            }}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                              selectedNextStatus === st
-                                ? 'bg-blue-600 text-white ring-2 ring-blue-400'
-                                : st === 'REJECTED'
-                                ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 hover:bg-rose-200'
-                                : st === 'GHOSTED'
-                                ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 hover:bg-amber-200'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-300'
-                            }`}
-                          >
-                            {STATUS_LABELS[st]}
-                          </button>
-                        ))}
-                      </div>
+                  );
+                })}
+              </div>
 
-                      {/* Conditional Requirement Inputs */}
-                      {selectedNextStatus && (
-                        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-800 space-y-3">
-                          <h4 className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider">
-                            Syarat Pindah ke {STATUS_LABELS[selectedNextStatus]}
-                          </h4>
+              <div className="border-t border-rule p-4">
+                {validNextStatuses.length === 0 ? (
+                  <p className="text-xs leading-relaxed text-muted">
+                    Status {STATUS_LABELS[application.status]} bersifat final. Tidak ada
+                    langkah berikutnya di jalur ini.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-medium text-ink">Pindahkan ke</span>
+                      {validNextStatuses.map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() => {
+                            setSelectedNextStatus(status);
+                            setTransitionError(null);
+                          }}
+                          aria-pressed={selectedNextStatus === status}
+                          className={`min-h-11 border px-3 text-xs font-medium transition-colors ${
+                            selectedNextStatus === status
+                              ? 'border-accent bg-accent text-accent-ink'
+                              : status === 'REJECTED'
+                              ? 'border-danger/40 text-danger hover:bg-danger/10'
+                              : status === 'GHOSTED'
+                              ? 'border-warning/60 text-warning hover:bg-warning/10'
+                              : 'border-border text-ink hover:bg-highlight'
+                          }`}
+                        >
+                          {STATUS_LABELS[status]}
+                        </button>
+                      ))}
+                    </div>
 
-                          {selectedNextStatus === 'APPLIED' && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                  Versi CV (cvVersion) *
-                                </label>
-                                <input
-                                  type="text"
-                                  value={cvVersion}
-                                  onChange={(e) => setCvVersion(e.target.value)}
-                                  placeholder="CV-Kapten-v2.pdf"
-                                  className="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                  Tanggal Melamar (appliedDate) *
-                                </label>
-                                <input
-                                  type="date"
-                                  value={appliedDate}
-                                  onChange={(e) => setAppliedDate(e.target.value)}
-                                  className="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700"
-                                />
-                              </div>
-                            </div>
-                          )}
+                    {selectedNextStatus && (
+                      <div className="space-y-3 border border-rule bg-paper p-3.5">
+                        <p className={kicker}>
+                          Syarat pindah ke {STATUS_LABELS[selectedNextStatus]}
+                        </p>
 
-                          {selectedNextStatus === 'INTERVIEW' && (
+                        {selectedNextStatus === 'APPLIED' && (
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <div>
-                              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                Jadwal Interview (Format YYYY-MM-DDTHH:mm) *
+                              <label htmlFor={cvId} className={fieldLabel}>
+                                Versi CV <span aria-hidden="true" className="text-danger">*</span>
                               </label>
                               <input
-                                type="datetime-local"
-                                value={interviewDateTime}
-                                onChange={(e) => setInterviewDateTime(e.target.value)}
-                                className="w-full sm:w-72 px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700"
+                                id={cvId}
+                                type="text"
+                                value={cvVersion}
+                                onChange={(e) => setCvVersion(e.target.value)}
+                                placeholder="CV-Kapten-v2.pdf"
+                                className={`${field} min-h-11`}
                               />
                             </div>
-                          )}
-
-                          {selectedNextStatus === 'OFFER' && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                  Nominal Uang Saku / Gaji (Rp, wajib &gt; 0) *
-                                </label>
-                                <input
-                                  type="number"
-                                  value={salaryOffer}
-                                  onChange={(e) => setSalaryOffer(e.target.value)}
-                                  placeholder="6000000"
-                                  className="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                  Mode Kerja (workMode) *
-                                </label>
-                                <select
-                                  value={workMode}
-                                  onChange={(e) => setWorkMode(e.target.value as WorkMode)}
-                                  className="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700"
-                                >
-                                  <option value="Remote">Remote</option>
-                                  <option value="Hybrid">Hybrid</option>
-                                  <option value="Onsite">Onsite</option>
-                                </select>
-                              </div>
+                            <div>
+                              <label htmlFor={appliedDateId} className={fieldLabel}>
+                                Tanggal melamar <span aria-hidden="true" className="text-danger">*</span>
+                              </label>
+                              <input
+                                id={appliedDateId}
+                                type="date"
+                                value={appliedDate}
+                                onChange={(e) => setAppliedDate(e.target.value)}
+                                className={`${field} min-h-11`}
+                              />
                             </div>
-                          )}
-
-                          {transitionError && (
-                            <div className="p-2 text-xs rounded bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 flex items-center gap-1.5">
-                              <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                              <span>{transitionError}</span>
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-2 pt-2">
-                            <button
-                              type="button"
-                              onClick={handleTransitionSubmit}
-                              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors"
-                            >
-                              Konfirmasi Pindah Status
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedNextStatus(null);
-                                setTransitionError(null);
-                              }}
-                              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-                            >
-                              Batal
-                            </button>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+                        )}
 
-              {/* 2. Nested Checklist & Activity Log Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left: Nested Checklist */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <ListChecks className="w-4 h-4 text-blue-500" />
-                      <span>Daftar Persiapan</span>
-                    </h3>
-                    <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      {completedCount} / {totalCount} selesai ({progressPercent}%)
-                    </span>
-                  </div>
+                        {selectedNextStatus === 'INTERVIEW' && (
+                          <div>
+                            <label htmlFor={interviewId} className={fieldLabel}>
+                              Jadwal interview <span aria-hidden="true" className="text-danger">*</span>
+                            </label>
+                            <input
+                              id={interviewId}
+                              type="datetime-local"
+                              value={interviewDateTime}
+                              onChange={(e) => setInterviewDateTime(e.target.value)}
+                              className={`${field} min-h-11 sm:max-w-xs`}
+                            />
+                          </div>
+                        )}
 
-                  {/* Progress Bar */}
-                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${progressPercent}%` }}
-                    />
-                  </div>
+                        {selectedNextStatus === 'OFFER' && (
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                              <label htmlFor={salaryId} className={fieldLabel}>
+                                Uang saku / bulan (Rp) <span aria-hidden="true" className="text-danger">*</span>
+                              </label>
+                              <input
+                                id={salaryId}
+                                type="number"
+                                min={1}
+                                value={salaryOffer}
+                                onChange={(e) => setSalaryOffer(e.target.value)}
+                                placeholder="6000000"
+                                className={`${field} min-h-11`}
+                              />
+                            </div>
+                            <div>
+                              <label htmlFor={offerWorkModeId} className={fieldLabel}>
+                                Mode kerja <span aria-hidden="true" className="text-danger">*</span>
+                              </label>
+                              <select
+                                id={offerWorkModeId}
+                                value={workMode}
+                                onChange={(e) => setWorkMode(e.target.value as WorkMode)}
+                                className={`${select} min-h-11`}
+                              >
+                                <option value="Remote">Remote</option>
+                                <option value="Hybrid">Hybrid</option>
+                                <option value="Onsite">Onsite</option>
+                              </select>
+                            </div>
+                          </div>
+                        )}
 
-                  {/* Checklist Items */}
-                  <div className="space-y-2">
-                    {application.checklist.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs"
-                      >
-                        <label className="flex items-center gap-2 cursor-pointer flex-1">
-                          <input
-                            type="checkbox"
-                            checked={item.done}
-                            onChange={() => handleToggleChecklist(item.id)}
-                            className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
-                          />
-                          <span
-                            className={
-                              item.done
-                                ? 'line-through text-slate-400 dark:text-slate-500'
-                                : 'text-slate-700 dark:text-slate-200 font-medium'
-                            }
+                        {transitionError && (
+                          <div
+                            role="alert"
+                            className="flex items-start gap-2 border border-danger/40 px-3 py-2 text-xs leading-relaxed text-danger"
                           >
-                            {item.text}
-                          </span>
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteChecklistItem(item.id)}
-                          className="text-slate-400 hover:text-rose-500 p-1 rounded"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                            <span>{transitionError}</span>
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={handleTransitionSubmit}
+                            className={`${buttonPrimary} min-h-11 px-3 text-xs`}
+                          >
+                            Konfirmasi pindah
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedNextStatus(null);
+                              setTransitionError(null);
+                            }}
+                            className={`${buttonGhost} min-h-11 text-xs`}
+                          >
+                            Batal
+                          </button>
+                        </div>
                       </div>
-                    ))}
-                    {application.checklist.length === 0 && (
-                      <p className="text-xs text-slate-400 italic">
-                        Belum ada checklist. Tambahkan persiapan interview/lamaran.
-                      </p>
                     )}
                   </div>
+                )}
+              </div>
+            </section>
 
-                  {/* Add Checklist Form */}
-                  <form onSubmit={handleAddChecklistItem} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newChecklistText}
-                      onChange={(e) => setNewChecklistText(e.target.value)}
-                      placeholder="Tambah tugas persiapan baru..."
-                      className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      type="submit"
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span>Tambah</span>
-                    </button>
-                  </form>
+            <div className="grid gap-6 md:grid-cols-2">
+              <section className="space-y-3 md:border-r md:border-rule md:pr-6">
+                <div className="flex items-end justify-between gap-2 border-b border-rule pb-2">
+                  <div>
+                    <p className={kicker}>Persiapan</p>
+                    <h3 className="mt-0.5 font-display text-lg leading-tight text-ink">
+                      Daftar persiapan
+                    </h3>
+                  </div>
+                  <span className="font-mono text-[11px] text-muted">
+                    {completedCount}/{totalCount} · {progressPercent}%
+                  </span>
                 </div>
 
-                {/* Right: Activity Log & Manual Notes */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-indigo-500" />
-                      <span>Riwayat Aktivitas</span>
-                    </h3>
-                    <span className="text-xs text-slate-400">
-                      {application.activityLogs.length} Entri
-                    </span>
-                  </div>
+                <div
+                  className="h-0.5 w-full bg-rule"
+                  role="progressbar"
+                  aria-label="Progres daftar persiapan"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={progressPercent}
+                >
+                  <div
+                    className={`h-0.5 ${
+                      progressPercent === 100 && totalCount > 0 ? 'bg-success' : 'bg-accent'
+                    }`}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
 
-                  {/* Timeline list */}
-                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                    {application.activityLogs.map((log) => (
-                      <div
-                        key={log.id}
-                        className="text-xs p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-0.5"
+                <div>
+                  {application.checklist.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex min-h-11 items-center justify-between gap-2 border-b border-rule py-1"
+                    >
+                      <label className="flex flex-1 cursor-pointer items-center gap-2 text-xs leading-relaxed">
+                        <input
+                          type="checkbox"
+                          checked={item.done}
+                          onChange={() => handleToggleChecklist(item.id)}
+                          className="h-4 w-4 shrink-0 accent-accent"
+                        />
+                        <span
+                          className={
+                            item.done ? 'text-muted line-through' : 'font-medium text-ink'
+                          }
+                        >
+                          {item.text}
+                        </span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteChecklistItem(item.id)}
+                        aria-label={`Hapus tugas ${item.text}`}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center text-muted transition-colors hover:bg-danger/10 hover:text-danger"
                       >
-                        <div className="text-[10px] text-slate-400">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {application.checklist.length === 0 && (
+                    <p className="border border-dashed border-rule px-3 py-3 text-xs leading-relaxed text-muted">
+                      Belum ada tugas persiapan. Tambahkan langkah pertama di bawah.
+                    </p>
+                  )}
+                </div>
+
+                <form onSubmit={handleAddChecklistItem} className="flex gap-2">
+                  <label htmlFor={checklistInputId} className="sr-only">
+                    Tugas persiapan baru
+                  </label>
+                  <input
+                    id={checklistInputId}
+                    type="text"
+                    value={newChecklistText}
+                    onChange={(e) => setNewChecklistText(e.target.value)}
+                    placeholder="Tambah tugas persiapan"
+                    className={`${field} min-h-11 min-w-0 flex-1 text-xs`}
+                  />
+                  <button type="submit" className={`${buttonSecondary} min-h-11 shrink-0 px-3 text-xs`}>
+                    <Plus className="h-3.5 w-3.5" />
+                    Tambah
+                  </button>
+                </form>
+              </section>
+
+              <section className="space-y-3">
+                <div className="flex items-end justify-between gap-2 border-b border-rule pb-2">
+                  <div>
+                    <p className={kicker}>Riwayat</p>
+                    <h3 className="mt-0.5 font-display text-lg leading-tight text-ink">
+                      Aktivitas
+                    </h3>
+                  </div>
+                  <span className="font-mono text-[11px] text-muted">
+                    {application.activityLogs.length} entri
+                  </span>
+                </div>
+
+                {application.activityLogs.length > 0 ? (
+                  <div className="max-h-64 overflow-y-auto border-t border-rule">
+                    {application.activityLogs.map((log) => (
+                      <div key={log.id} className="border-b border-rule py-2.5">
+                        <p className="font-mono text-[10px] text-muted">
                           {formatDisplayDateTime(log.timestamp)}
-                        </div>
-                        <div className="text-slate-700 dark:text-slate-300 font-medium">
+                        </p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-ink/90">
                           {log.message}
-                        </div>
+                        </p>
                       </div>
                     ))}
                   </div>
+                ) : (
+                  <p className="border border-dashed border-rule px-3 py-3 text-xs leading-relaxed text-muted">
+                    Belum ada aktivitas yang tercatat.
+                  </p>
+                )}
 
-                  {/* Add Manual Note Form */}
-                  <form onSubmit={handleAddManualNote} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={manualNote}
-                      onChange={(e) => setManualNote(e.target.value)}
-                      placeholder="Tulis catatan manual Kapten..."
-                      className="flex-1 px-3 py-1.5 text-xs rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      type="submit"
-                      className="px-3 py-1.5 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg flex items-center gap-1"
-                    >
-                      <MessageSquare className="w-3 h-3" />
-                      <span>Catat</span>
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+                <form onSubmit={handleAddManualNote} className="flex gap-2">
+                  <label htmlFor={noteInputId} className="sr-only">
+                    Catatan baru
+                  </label>
+                  <input
+                    id={noteInputId}
+                    type="text"
+                    value={manualNote}
+                    onChange={(e) => setManualNote(e.target.value)}
+                    placeholder="Tulis catatan"
+                    className={`${field} min-h-11 min-w-0 flex-1 text-xs`}
+                  />
+                  <button type="submit" className={`${buttonSecondary} min-h-11 shrink-0 px-3 text-xs`}>
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    Catat
+                  </button>
+                </form>
+              </section>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </ModalFrame>
   );
 };

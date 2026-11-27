@@ -2,7 +2,13 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Application, JobListing } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { INITIAL_APPLICATIONS, INITIAL_KAPTEN_SKILLS } from './utils/initialData';
-import { isGhostingRisk } from './utils/ghosting';
+import { calculateDashboardStats } from './utils/dashboardStats';
+import {
+  isApplicationArray,
+  isBoolean,
+  isStringArray,
+  parseBackup,
+} from './utils/dataValidation';
 import { detectInterviewConflicts } from './utils/interviewConflict';
 import { Header, ActiveTab } from './components/common/Header';
 import { StatCards } from './components/dashboard/StatCards';
@@ -13,25 +19,56 @@ import { OfferComparatorView } from './components/comparator/OfferComparatorView
 import { AddApplicationModal } from './components/pipeline/AddApplicationModal';
 import { ApplicationDetailModal } from './components/pipeline/ApplicationDetailModal';
 import { UndoToast } from './components/common/UndoToast';
+import { kicker } from './components/common/ui';
+
+const PAGE_COPY: Record<ActiveTab, { kicker: string; title: string; note: string }> = {
+  jobs: {
+    kicker: 'Buku kerja / Lowongan',
+    title: 'Cari lowongan',
+    note: 'Cocokkan skill-mu dengan lowongan yang sedang buka, lalu simpan yang paling masuk akal.',
+  },
+  pipeline: {
+    kicker: 'Buku kerja / Pipeline',
+    title: 'Buku lamaran',
+    note: 'Catat setiap langkah, dari wishlist sampai offer, di satu tempat.',
+  },
+  comparator: {
+    kicker: 'Buku kerja / Offer',
+    title: 'Bandingkan offer',
+    note: 'Dua tawaran, bobot yang sama. Lihat mana yang benar-benar lebih baik.',
+  },
+};
+
+const uniqueApplicationId = (id: string, applications: Application[]): string => {
+  const ids = new Set(applications.map((app) => app.id));
+  let candidate = id;
+  let suffix = 1;
+  while (ids.has(candidate)) candidate = `${id}-${suffix++}`;
+  return candidate;
+};
 
 export default function App() {
   // Navigation active tab: 'jobs' | 'pipeline' | 'comparator'
   const [activeTab, setActiveTab] = useState<ActiveTab>('pipeline');
 
   // Persisted state using Custom Hook useLocalStorage<T>
+  // Validators reject corrupted / outdated shapes instead of trusting JSON.parse.
   const [applications, setApplications] = useLocalStorage<Application[]>(
     'kapten_applications_v1',
-    INITIAL_APPLICATIONS
+    INITIAL_APPLICATIONS,
+    isApplicationArray
   );
 
   const [kaptenSkills, setKaptenSkills] = useLocalStorage<string[]>(
     'kapten_skills_v1',
-    INITIAL_KAPTEN_SKILLS
+    INITIAL_KAPTEN_SKILLS,
+    isStringArray
   );
 
   const [isDarkMode, setIsDarkMode] = useLocalStorage<boolean>(
     'kapten_dark_mode_v1',
-    false
+    false,
+    isBoolean
   );
 
   // Sync Dark Mode class on <html>
@@ -59,44 +96,17 @@ export default function App() {
     return applications.find((app) => app.id === selectedAppId) || null;
   }, [applications, selectedAppId]);
 
-  // Derived State: 5 Kartu Statistik (Page 6 & 8)
-  const totalApplications = applications.length;
-
-  const activeInPipeline = useMemo(() => {
-    return applications.filter(
-      (app) => app.status !== 'OFFER' && app.status !== 'REJECTED'
-    ).length;
-  }, [applications]);
-
-  const processedCount = useMemo(() => {
-    return applications.filter((app) => app.status !== 'WISHLIST').length;
-  }, [applications]);
-
-  const responseRate = useMemo(() => {
-    return totalApplications > 0
-      ? Math.round((processedCount / totalApplications) * 100)
-      : 0;
-  }, [totalApplications, processedCount]);
-
-  const interviewCount = useMemo(() => {
-    return applications.filter(
-      (app) => app.status === 'INTERVIEW' || app.status === 'OFFER'
-    ).length;
-  }, [applications]);
-
-  const interviewRate = useMemo(() => {
-    return totalApplications > 0
-      ? Math.round((interviewCount / totalApplications) * 100)
-      : 0;
-  }, [totalApplications, interviewCount]);
-
-  const ghostingRiskCount = useMemo(() => {
-    return applications.filter((app) => isGhostingRisk(app)).length;
-  }, [applications]);
-
-  const offerCount = useMemo(() => {
-    return applications.filter((app) => app.status === 'OFFER').length;
-  }, [applications]);
+  const {
+    totalApplications,
+    activeInPipeline,
+    submittedCount,
+    responseCount,
+    responseRate,
+    interviewCount,
+    interviewRate,
+    ghostingRiskCount,
+    offerCount,
+  } = useMemo(() => calculateDashboardStats(applications), [applications]);
 
   // Derived State: Interview Conflicts (checked on all data)
   const interviewConflicts = useMemo(() => {
@@ -116,7 +126,10 @@ export default function App() {
 
   // Add Application Handler
   const handleAddApplication = (newApp: Application) => {
-    setApplications((prev) => [newApp, ...prev]);
+    setApplications((prev) => [
+      { ...newApp, id: uniqueApplicationId(newApp.id, prev) },
+      ...prev,
+    ]);
   };
 
   // Update Application Handler (Immutable)
@@ -189,7 +202,9 @@ export default function App() {
     }
 
     // Restore app intact
-    setApplications((prev) => [deletedApp, ...prev]);
+    setApplications((prev) =>
+      prev.some((app) => app.id === deletedApp.id) ? prev : [deletedApp, ...prev]
+    );
     setDeletedApp(null);
   };
 
@@ -254,7 +269,10 @@ export default function App() {
       ],
     };
 
-    setApplications((prev) => [newApp, ...prev]);
+    setApplications((prev) => [
+      { ...newApp, id: uniqueApplicationId(newApp.id, prev) },
+      ...prev,
+    ]);
   };
 
   // Bonus: Export Data to JSON
@@ -286,25 +304,38 @@ export default function App() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
+      const content = event.target?.result;
+      if (typeof content !== 'string') {
+        alert('Gagal mengimpor file JSON. Format file tidak valid.');
+        return;
+      }
+
       try {
-        const content = event.target?.result as string;
-        const parsed = JSON.parse(content);
-
-        if (Array.isArray(parsed.applications)) {
-          setApplications(parsed.applications);
-        } else if (Array.isArray(parsed)) {
-          setApplications(parsed);
+        const backup = parseBackup(JSON.parse(content) as unknown);
+        if (!backup) {
+          alert(
+            'Gagal mengimpor: struktur data tidak valid. Gunakan file backup hasil ekspor aplikasi ini.'
+          );
+          return;
         }
 
-        if (Array.isArray(parsed.kaptenSkills)) {
-          setKaptenSkills(parsed.kaptenSkills);
+        setApplications(backup.applications);
+        if (backup.kaptenSkills) {
+          setKaptenSkills(backup.kaptenSkills);
         }
+
+        // Drop any pending undo so an application from the old dataset cannot
+        // be restored on top of the imported one.
+        handleDismissUndo();
 
         alert('Data backup berhasil diimpor!');
       } catch (err) {
         alert('Gagal mengimpor file JSON. Format file tidak valid.');
         console.error(err);
       }
+    };
+    reader.onerror = () => {
+      alert('Gagal membaca file backup.');
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -314,17 +345,20 @@ export default function App() {
   const handleResetData = () => {
     if (
       window.confirm(
-        'Kembalikan seluruh data ke kondisi awal demo (12 lamaran & skill default)?'
+        'Kembalikan seluruh data ke kondisi awal demo (lamaran contoh & skill default)?'
       )
     ) {
+      handleDismissUndo();
+      setSelectedAppId(null);
       setApplications(INITIAL_APPLICATIONS);
       setKaptenSkills(INITIAL_KAPTEN_SKILLS);
     }
   };
 
+  const pageCopy = PAGE_COPY[activeTab];
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
-      {/* Top Header Navbar */}
+    <div className="flex min-h-screen flex-col bg-paper text-ink">
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -338,24 +372,33 @@ export default function App() {
         onResetData={handleResetData}
       />
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-        {/* Banner Bentrok Jadwal Interview (Always visible at top when conflict exists!) */}
+      <main className="mx-auto w-full max-w-[1180px] flex-1 space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div className="border-b-2 border-ink pb-4">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className={kicker}>{pageCopy.kicker}</p>
+              <h1 className="mt-1 font-display text-3xl leading-tight text-ink sm:text-4xl">
+                {pageCopy.title}
+              </h1>
+            </div>
+            <p className="max-w-xs text-sm leading-relaxed text-muted">{pageCopy.note}</p>
+          </div>
+        </div>
+
         <ConflictBanner conflicts={interviewConflicts} />
 
-        {/* 5 Kartu Statistik Dashboard */}
         <StatCards
           totalApplications={totalApplications}
           activeInPipeline={activeInPipeline}
           responseRate={responseRate}
-          processedCount={processedCount}
+          submittedCount={submittedCount}
+          responseCount={responseCount}
           interviewRate={interviewRate}
           interviewCount={interviewCount}
           ghostingRiskCount={ghostingRiskCount}
           offerCount={offerCount}
         />
 
-        {/* Tab Views */}
         {activeTab === 'jobs' && (
           <JobExplorer
             kaptenSkills={kaptenSkills}
@@ -381,11 +424,11 @@ export default function App() {
           <OfferComparatorView
             applications={applications}
             kaptenSkills={kaptenSkills}
+            onGoToPipeline={() => setActiveTab('pipeline')}
           />
         )}
       </main>
 
-      {/* Modal: Form Tambah Lamaran Manual */}
       <AddApplicationModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
@@ -393,8 +436,8 @@ export default function App() {
         existingApplications={applications}
       />
 
-      {/* Modal: Detail Lamaran, State Machine, Checklist, Log, Prep Timer */}
       <ApplicationDetailModal
+        key={selectedApplication?.id ?? 'closed'}
         application={selectedApplication}
         isOpen={Boolean(selectedApplication)}
         onClose={() => setSelectedAppId(null)}
@@ -402,7 +445,6 @@ export default function App() {
         onDeleteApplication={handleDeleteApplication}
       />
 
-      {/* Undo Toast Notification (Fitur 6) */}
       <UndoToast
         deletedApp={deletedApp}
         onUndo={handleUndoDelete}
@@ -410,10 +452,9 @@ export default function App() {
         secondsRemaining={undoSeconds}
       />
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 py-4 text-center text-xs text-slate-500 dark:text-slate-400">
-        <p>
-          Praktikum Pemrograman Web 2026 • Modul 5: Aku Mw Magang • Kelompok P11
+      <footer className="mt-auto border-t border-rule py-5">
+        <p className="px-4 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
+          Praktikum Pemrograman Web 2026 · Modul 5 · Kelompok P11
         </p>
       </footer>
     </div>
