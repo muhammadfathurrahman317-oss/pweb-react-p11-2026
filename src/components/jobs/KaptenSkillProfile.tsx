@@ -45,7 +45,7 @@ export const KaptenSkillProfile: React.FC<KaptenSkillProfileProps> = ({
   };
 
   return (
-    <section className="overflow-hidden rounded-[3px] border border-rule bg-surface">
+    <section className="overflow-hidden border-2 border-border bg-surface">
       <div className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
           <p className={kicker}>Indeks skill</p>
@@ -67,7 +67,7 @@ export const KaptenSkillProfile: React.FC<KaptenSkillProfileProps> = ({
 
       <div
         id={bodyId}
-        className={`${isExpanded ? 'block' : 'hidden'} border-t border-rule px-4 py-4 lg:block`}
+        className={`${isExpanded ? 'block' : 'hidden'} border-t-2 border-border px-4 py-4 lg:block`}
       >
         <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
           <div className="min-w-0">

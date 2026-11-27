@@ -6,7 +6,7 @@
 
 @theme {
   --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-display: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", "SFMono-Regular", monospace;
 
   --color-paper: var(--app-paper);
@@ -22,40 +22,38 @@
   --color-danger: var(--app-danger);
   --color-highlight: var(--app-highlight);
 
-  --radius-sheet: 3px;
+  --radius-sheet: 0px;
 }
 
-/* Light: desk in daylight. Contrast figures live in DESIGN.md. */
 :root {
-  --app-paper: #f2ecdf;
-  --app-surface: #faf6ec;
-  --app-ink: #211d16;
-  --app-muted: #5e5749;
-  --app-rule: #d6cbb5;
-  --app-border: #7d7059;
-  --app-accent: #8a3a1f;
-  --app-accent-ink: #fbf7ec;
-  --app-success: #2e5c42;
-  --app-warning: #7a4e0e;
-  --app-danger: #8b2a2a;
-  --app-highlight: #efe7d2;
+  --app-paper: #e9edf0;
+  --app-surface: #ffffff;
+  --app-ink: #172126;
+  --app-muted: #415159;
+  --app-rule: #9caab0;
+  --app-border: #172126;
+  --app-accent: #f5d547;
+  --app-accent-ink: #172126;
+  --app-success: #175c3d;
+  --app-warning: #765000;
+  --app-danger: #a32835;
+  --app-highlight: #f3f6f6;
   color-scheme: light;
 }
 
-/* Dark: desk lamp at night. */
 .dark {
-  --app-paper: #16130e;
-  --app-surface: #1e1a13;
-  --app-ink: #f1eadc;
-  --app-muted: #b5aa93;
-  --app-rule: #393327;
-  --app-border: #8c8168;
-  --app-accent: #e09a6e;
-  --app-accent-ink: #1a1610;
-  --app-success: #8cc4a6;
-  --app-warning: #e5b968;
-  --app-danger: #e59191;
-  --app-highlight: #2a251b;
+  --app-paper: #121b20;
+  --app-surface: #202b30;
+  --app-ink: #f3f7f4;
+  --app-muted: #c1d0d0;
+  --app-rule: #829496;
+  --app-border: #d8e3de;
+  --app-accent: #efd55d;
+  --app-accent-ink: #172126;
+  --app-success: #94dab0;
+  --app-warning: #efc466;
+  --app-danger: #ff9aa1;
+  --app-highlight: #304046;
   color-scheme: dark;
 }
 
@@ -71,7 +69,7 @@
   h2,
   h3 {
     font-family: var(--font-display);
-    font-weight: 600;
+    font-weight: 700;
     text-wrap: balance;
   }
 
@@ -105,7 +103,25 @@
   background: var(--app-muted);
 }
 
-/* MOTION 1: no loops, no parallax. Honor the OS preference. */
+/* Controls carry a compact offset edge; data rows stay flat for scanability. */
+.neo-action {
+  box-shadow: 3px 3px 0 var(--app-ink);
+}
+
+.neo-action:hover:not(:disabled) {
+  box-shadow: 1px 1px 0 var(--app-ink);
+  transform: translate(2px, 2px);
+}
+
+.neo-action:active:not(:disabled) {
+  box-shadow: none;
+  transform: translate(3px, 3px);
+}
+
+.neo-panel {
+  box-shadow: 5px 5px 0 var(--app-ink);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

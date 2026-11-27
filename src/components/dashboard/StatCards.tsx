@@ -29,23 +29,23 @@ export const StatCards: React.FC<StatCardsProps> = ({
       <SectionHeading
         index="01"
         title="Ringkasan"
-        description="Hitungan langsung dari buku lamaranmu. Tidak ada angka yang dikira-kira."
+        description="Angka dari lamaran yang kamu catat."
       />
 
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[3px] border border-rule bg-rule lg:grid-cols-5">
-        <div className="col-span-2 bg-surface p-4 sm:p-5 lg:col-span-1">
-          <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
+      <div className="grid grid-cols-2 border-2 border-border bg-surface lg:grid-cols-5">
+        <div className="col-span-2 border-b-2 border-border bg-accent p-4 text-accent-ink sm:p-5 lg:col-span-1 lg:border-b-0 lg:border-r-2">
+          <div className="text-[10px] font-bold uppercase text-accent-ink">
             Total lamaran
           </div>
-          <div className="mt-3 font-display text-4xl leading-none text-ink sm:text-5xl">
+          <div className="mt-3 font-display text-4xl font-extrabold leading-none text-accent-ink sm:text-5xl">
             {totalApplications}
           </div>
-          <div className="mt-3 text-[11px] leading-snug text-muted">
+          <div className="mt-3 text-[11px] font-medium leading-snug text-accent-ink">
             {activeInPipeline} masih aktif di pipeline
           </div>
         </div>
 
-        <div className="bg-surface p-4 sm:p-5">
+        <div className="border-b-2 border-r-2 border-border bg-surface p-4 sm:p-5 lg:border-b-0">
           <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
             Response rate
           </div>
@@ -57,7 +57,7 @@ export const StatCards: React.FC<StatCardsProps> = ({
           </div>
         </div>
 
-        <div className="bg-surface p-4 sm:p-5">
+        <div className="border-b-2 border-border bg-surface p-4 sm:p-5 lg:border-b-0 lg:border-r-2">
           <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
             Interview rate
           </div>
@@ -69,7 +69,7 @@ export const StatCards: React.FC<StatCardsProps> = ({
           </div>
         </div>
 
-        <div className="bg-surface p-4 sm:p-5">
+        <div className="border-b-2 border-r-2 border-border bg-surface p-4 sm:p-5 lg:border-b-0">
           <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted">
             Rawan ghosting
           </div>

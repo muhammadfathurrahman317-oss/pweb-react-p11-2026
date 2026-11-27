@@ -107,7 +107,7 @@ export const ModalFrame: React.FC<ModalFrameProps> = ({
           aria-modal="true"
           aria-labelledby={labelledBy}
           tabIndex={-1}
-          className={`my-4 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-[3px] border border-rule bg-surface shadow-[0_28px_70px_-24px_rgba(0,0,0,0.5)] ${widthClass}`}
+          className={`my-4 flex max-h-[92vh] w-full flex-col overflow-hidden border-2 border-border bg-surface shadow-[8px_8px_0_var(--app-ink)] ${widthClass}`}
         >
           {children}
         </div>

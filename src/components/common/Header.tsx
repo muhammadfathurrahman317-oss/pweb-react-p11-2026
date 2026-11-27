@@ -44,24 +44,21 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-rule bg-paper">
+    <header className="sticky top-0 z-30 border-b-2 border-ink bg-surface">
       <div className="mx-auto max-w-[1180px] px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center gap-4">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center border border-ink font-mono text-[11px] font-medium tracking-[0.12em] text-ink">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center border-2 border-ink bg-accent font-sans text-xs font-black text-accent-ink">
               AM
             </span>
             <div className="min-w-0">
               <div className="flex items-baseline gap-2">
-                <span className="truncate font-display text-[17px] leading-none text-ink">
+                <span className="truncate font-display text-[17px] font-extrabold leading-none text-ink">
                   Aku Mw Magang
-                </span>
-                <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-muted">
-                  P11
                 </span>
               </div>
               <p className="mt-1 hidden truncate text-[11px] leading-none text-muted sm:block">
-                Buku kerja lamaran magang
+                Ruang kerja lamaran magang
               </p>
             </div>
           </div>
@@ -76,15 +73,15 @@ export const Header: React.FC<HeaderProps> = ({
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`flex items-center gap-2 border-b-2 px-3 text-sm transition-colors ${
+                  className={`flex items-center gap-2 border-b-[3px] px-3 text-sm font-semibold transition-colors ${
                     isActive
-                      ? 'border-accent text-ink'
-                      : 'border-transparent text-muted hover:text-ink'
+                      ? 'border-ink bg-accent text-accent-ink'
+                      : 'border-transparent text-muted hover:bg-highlight hover:text-ink'
                   }`}
                 >
                   <span>{tab.label}</span>
                   {count !== null && (
-                    <span className="font-mono text-[10px] text-muted">({count})</span>
+                    <span className={`font-mono text-[10px] ${isActive ? 'text-accent-ink' : 'text-muted'}`}>({count})</span>
                   )}
                 </button>
               );
@@ -101,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({
               aria-label="Impor backup JSON"
             />
 
-            <div className="hidden items-center divide-x divide-rule border border-rule sm:flex">
+            <div className="hidden items-center divide-x-2 divide-border border-2 border-border sm:flex">
               <button
                 type="button"
                 onClick={onExportData}
@@ -144,7 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={onOpenAddModal}
-              className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[2px] bg-accent px-3 text-sm font-medium text-accent-ink transition-colors hover:bg-ink"
+              className="neo-action inline-flex h-11 items-center justify-center gap-1.5 border-2 border-ink bg-accent px-3 text-sm font-bold text-accent-ink transition-[background-color,box-shadow,transform] hover:bg-surface hover:text-ink"
             >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Catat lamaran</span>
@@ -154,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <nav
-          className="grid grid-cols-3 border-t border-rule md:hidden"
+          className="grid grid-cols-3 border-t-2 border-ink md:hidden"
           aria-label="Navigasi utama seluler"
         >
           {TAB_LABELS.map((tab) => {
@@ -166,15 +163,15 @@ export const Header: React.FC<HeaderProps> = ({
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`flex min-h-11 items-center justify-center gap-1.5 border-b-2 text-xs transition-colors ${
+                className={`flex min-h-11 items-center justify-center gap-1.5 border-b-[3px] text-xs font-semibold transition-colors ${
                   isActive
-                    ? 'border-accent text-ink'
-                    : 'border-transparent text-muted hover:text-ink'
+                    ? 'border-ink bg-accent text-accent-ink'
+                    : 'border-transparent text-muted hover:bg-highlight hover:text-ink'
                 }`}
               >
                 <span>{tab.label}</span>
                 {count !== null && (
-                  <span className="font-mono text-[10px] text-muted">({count})</span>
+                  <span className={`font-mono text-[10px] ${isActive ? 'text-accent-ink' : 'text-muted'}`}>({count})</span>
                 )}
               </button>
             );

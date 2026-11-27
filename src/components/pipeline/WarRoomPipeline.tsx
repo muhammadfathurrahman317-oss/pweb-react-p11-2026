@@ -101,7 +101,7 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
         }
       />
 
-      <div className="grid gap-3 border-y border-rule py-3 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_170px_180px_190px]">
+      <div className="grid gap-3 border-y-2 border-border py-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_170px_180px_190px]">
         <div className="relative min-w-0">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
           <input
@@ -160,7 +160,7 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
       </div>
 
       {filteredApplications.length === 0 ? (
-        <div className="border border-rule bg-surface px-6 py-12 text-center">
+        <div className="border-2 border-border bg-surface px-6 py-12 text-center">
           <Briefcase className="mx-auto h-8 w-8 text-muted" />
           <h3 className="mt-4 font-display text-xl text-ink">
             {applications.length === 0 ? 'Buku lamaran masih kosong' : 'Tidak ada entri yang cocok'}
@@ -189,7 +189,7 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
           )}
         </div>
       ) : (
-        <div className="border-t border-ink/25">
+        <div className="border-t-2 border-border bg-surface">
           {filteredApplications.map((app, index) => {
             const match = calculateSkillMatch(kaptenSkills, app.requiredSkills);
             const hasGhostingRisk = isGhostingRisk(app);
@@ -208,8 +208,8 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
             return (
               <article
                 key={app.id}
-                className={`border-b border-l-2 border-b-rule py-5 pl-4 pr-1 transition-colors hover:bg-highlight/35 sm:pl-6 ${
-                  hasGhostingRisk ? 'border-l-warning' : 'border-l-transparent'
+                className={`border-x-2 border-b-2 border-border px-4 py-5 transition-colors hover:bg-highlight sm:px-6 ${
+                  hasGhostingRisk ? 'bg-warning/10' : ''
                 }`}
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -230,7 +230,7 @@ export const WarRoomPipeline: React.FC<WarRoomPipelineProps> = ({
                       )}
                     </div>
 
-                    <h3 className="font-display text-xl leading-snug text-ink sm:text-2xl">
+                    <h3 className="font-display text-xl font-bold leading-snug text-ink sm:text-2xl">
                       {app.role}
                     </h3>
 

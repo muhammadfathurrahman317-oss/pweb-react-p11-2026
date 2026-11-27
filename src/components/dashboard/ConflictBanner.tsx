@@ -14,7 +14,7 @@ export const ConflictBanner: React.FC<ConflictBannerProps> = ({ conflicts }) => 
   return (
     <section
       role="alert"
-      className="border border-warning/40 border-l-2 border-l-warning bg-surface px-4 py-4 sm:px-5"
+      className="neo-panel border-2 border-border bg-surface px-4 py-4 sm:px-5"
     >
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />

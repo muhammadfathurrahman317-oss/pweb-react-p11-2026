@@ -140,7 +140,7 @@ export const JobExplorer: React.FC<JobExplorerProps> = ({
         onDataSourceChange={(newSource) => setDataSource(newSource)}
       />
 
-      <div className="border-y border-rule py-3">
+      <div className="border-y-2 border-border py-4">
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_200px_200px]">
           <div className="relative min-w-0">
             <label htmlFor={searchId} className="sr-only">

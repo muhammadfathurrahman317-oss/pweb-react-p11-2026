@@ -17,11 +17,11 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
   description,
   action,
 }) => (
-  <div className="flex flex-wrap items-end justify-between gap-3 border-b border-rule pb-3">
+  <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-ink pb-3">
     <div className="flex min-w-0 items-start gap-3">
-      <span className="mt-1 font-mono text-[11px] leading-none text-muted">{index}</span>
+      <span className="mt-1 border-2 border-ink bg-accent px-1.5 py-1 font-mono text-[11px] font-bold leading-none text-accent-ink">{index}</span>
       <div className="min-w-0">
-        <h2 className="font-display text-2xl leading-tight text-ink sm:text-[28px]">{title}</h2>
+        <h2 className="font-display text-2xl font-bold leading-tight text-ink sm:text-[28px]">{title}</h2>
         {description && <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted">{description}</p>}
       </div>
     </div>

@@ -23,17 +23,17 @@ import { kicker } from './components/common/ui';
 
 const PAGE_COPY: Record<ActiveTab, { kicker: string; title: string; note: string }> = {
   jobs: {
-    kicker: 'Buku kerja / Lowongan',
+    kicker: 'Lowongan / cari dan simpan',
     title: 'Cari lowongan',
     note: 'Cocokkan skill-mu dengan lowongan yang sedang buka, lalu simpan yang paling masuk akal.',
   },
   pipeline: {
-    kicker: 'Buku kerja / Pipeline',
+    kicker: 'Pipeline / pantau progres',
     title: 'Buku lamaran',
     note: 'Catat setiap langkah, dari wishlist sampai offer, di satu tempat.',
   },
   comparator: {
-    kicker: 'Buku kerja / Offer',
+    kicker: 'Offer / pilih dengan angka',
     title: 'Bandingkan offer',
     note: 'Dua tawaran, bobot yang sama. Lihat mana yang benar-benar lebih baik.',
   },
@@ -373,11 +373,11 @@ export default function App() {
       />
 
       <main className="mx-auto w-full max-w-[1180px] flex-1 space-y-8 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <div className="border-b-2 border-ink pb-4">
+        <div className="border-b-[3px] border-ink pb-5">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
               <p className={kicker}>{pageCopy.kicker}</p>
-              <h1 className="mt-1 font-display text-3xl leading-tight text-ink sm:text-4xl">
+              <h1 className="mt-1 font-display text-3xl font-extrabold leading-tight text-ink sm:text-4xl">
                 {pageCopy.title}
               </h1>
             </div>
@@ -452,9 +452,9 @@ export default function App() {
         secondsRemaining={undoSeconds}
       />
 
-      <footer className="mt-auto border-t border-rule py-5">
-        <p className="px-4 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-muted">
-          Praktikum Pemrograman Web 2026 · Modul 5 · Kelompok P11
+      <footer className="mt-auto border-t-2 border-ink bg-surface py-4">
+        <p className="px-4 text-center text-xs font-medium text-muted">
+          Aku Mw Magang
         </p>
       </footer>
     </div>

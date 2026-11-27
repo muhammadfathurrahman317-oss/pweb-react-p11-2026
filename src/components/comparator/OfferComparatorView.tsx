@@ -26,8 +26,8 @@ interface OfferSheetProps {
 
 const OfferSheet: React.FC<OfferSheetProps> = ({ offer, result, side, isRecommended }) => {
   return (
-    <div className="flex flex-col border border-rule bg-surface">
-      <div className={`h-0.5 w-full ${isRecommended ? 'bg-accent' : 'bg-ink/20'}`} />
+    <div className={`flex flex-col border-2 border-border bg-surface ${isRecommended ? 'neo-panel' : ''}`}>
+      <div className={`h-1 w-full ${isRecommended ? 'bg-accent' : 'bg-ink/20'}`} />
 
       <div className="flex flex-1 flex-col p-5 sm:p-6">
         <div className="flex items-start justify-between gap-3 border-b border-rule pb-4">
@@ -144,7 +144,7 @@ export const OfferComparatorView: React.FC<OfferComparatorViewProps> = ({
           description="Bobot penilaian: uang saku 50%, mode kerja 25%, kecocokan skill 25%."
         />
 
-        <div className="border border-rule bg-surface px-6 py-10 sm:px-8">
+        <div className="border-2 border-border bg-surface px-6 py-8 sm:px-8">
           <div className="max-w-xl">
             <p className={kicker}>Belum bisa dibandingkan</p>
             <h3 className="mt-1 font-display text-2xl leading-tight text-ink">
@@ -196,7 +196,7 @@ export const OfferComparatorView: React.FC<OfferComparatorViewProps> = ({
         description="Bobot penilaian: uang saku 50%, mode kerja 25%, kecocokan skill 25%."
       />
 
-      <div className="flex flex-wrap items-end gap-3 border-y border-rule py-3">
+      <div className="flex flex-wrap items-end gap-3 border-y-2 border-border py-4">
         <div className="min-w-[160px] flex-1 sm:flex-none">
           <label htmlFor={selectIdA} className={fieldLabel}>
             Offer A

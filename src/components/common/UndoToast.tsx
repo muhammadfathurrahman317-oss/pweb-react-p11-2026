@@ -24,7 +24,7 @@ export const UndoToast: React.FC<UndoToastProps> = ({
       aria-live="polite"
       className="fixed bottom-4 left-4 right-4 z-50 sm:left-auto sm:right-6 sm:w-[380px]"
     >
-      <div className="border border-rule border-l-2 border-l-accent bg-surface p-3 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.45)]">
+      <div className="border-2 border-border bg-surface p-3 shadow-[4px_4px_0_var(--app-ink)]">
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted">

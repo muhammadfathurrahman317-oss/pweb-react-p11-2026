@@ -4,13 +4,13 @@ import { STATUS_LABELS } from '../../utils/stateMachine';
 import { getMatchTier } from '../../utils/skillMatch';
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  WISHLIST: 'border-rule text-muted',
-  APPLIED: 'border-ink/50 text-ink',
-  SCREENING: 'border-accent/60 text-accent',
-  INTERVIEW: 'border-accent/70 bg-highlight text-accent',
-  OFFER: 'border-success/60 text-success',
-  REJECTED: 'border-danger/50 text-danger',
-  GHOSTED: 'border-warning/60 text-warning',
+  WISHLIST: 'border-border text-muted',
+  APPLIED: 'border-border text-ink',
+  SCREENING: 'border-border text-ink',
+  INTERVIEW: 'border-border bg-highlight text-ink',
+  OFFER: 'border-success text-success',
+  REJECTED: 'border-danger text-danger',
+  GHOSTED: 'border-warning text-warning',
 };
 
 interface StatusStampProps {
@@ -28,9 +28,9 @@ export const StatusStamp: React.FC<StatusStampProps> = ({ status, className = ''
 );
 
 const MATCH_STYLES = {
-  high: 'border-success/60 text-success',
-  medium: 'border-warning/60 text-warning',
-  low: 'border-danger/50 text-danger',
+  high: 'border-success text-success',
+  medium: 'border-warning text-warning',
+  low: 'border-danger text-danger',
 } as const;
 
 interface MatchStampProps {
