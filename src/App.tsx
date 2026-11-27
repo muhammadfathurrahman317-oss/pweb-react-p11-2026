@@ -90,6 +90,17 @@ export default function App() {
   const undoTimeoutRef = useRef<number | null>(null);
   const countdownIntervalRef = useRef<number | null>(null);
 
+  useEffect(() => () => {
+    if (undoTimeoutRef.current !== null) {
+      window.clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+    if (countdownIntervalRef.current !== null) {
+      window.clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+  }, []);
+
   // Active detail application (derived from applications to keep it fresh)
   const selectedApplication = useMemo(() => {
     if (!selectedAppId) return null;

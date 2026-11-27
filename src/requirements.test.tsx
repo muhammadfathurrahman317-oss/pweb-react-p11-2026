@@ -261,6 +261,19 @@ describe('TASK.md new business rules', () => {
     }
   });
 
+  it('clears pending undo timers when App unmounts', () => {
+    vi.useFakeTimers();
+    try {
+      const { unmount } = render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: 'Hapus lamaran Garuda FinTech' }));
+      expect(vi.getTimerCount()).toBe(2);
+      unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('does not restore a duplicate app ID when another tab has already restored it', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Hapus lamaran Garuda FinTech' }));
@@ -293,9 +306,18 @@ describe('TASK.md new business rules', () => {
     const b = appWith({ id: 'same', status: 'OFFER', salaryOffer: 2000 });
     expect(parseBackup({ applications: [a, b], kaptenSkills: [] })).toBeNull();
     expect(isApplicationArray([a, b])).toBe(false);
-    expect(isApplicationArray([a, { ...b, id: 'other' }])).toBe(true);
+    expect(isApplicationArray([a, { ...b, id: 'other', role: 'Other Role' }])).toBe(true);
     render(<OfferComparatorView applications={[a, b]} kaptenSkills={[]} onGoToPipeline={vi.fn()} />);
     expect(screen.getByText(/butuh dua offer/i)).toBeTruthy();
+  });
+
+  it('rejects duplicate company and role pairs in backups and persisted arrays', () => {
+    const first = appWith({ id: 'first', company: ' Google ', role: 'Frontend Intern' });
+    const second = appWith({ id: 'second', company: 'google', role: ' frontend intern ' });
+    expect(isApplicationArray([first, second])).toBe(false);
+    expect(parseBackup({ applications: [first, second], kaptenSkills: [] })).toBeNull();
+    expect(parseBackup([first, second])).toBeNull();
+    expect(isApplicationArray([first, { ...second, role: 'Backend Intern' }])).toBe(true);
   });
 
   it('rejects HTTP failures and malformed API responses', async () => {

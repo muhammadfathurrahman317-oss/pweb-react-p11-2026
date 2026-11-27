@@ -62,7 +62,7 @@ export const InterviewPrepSection: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-rule pb-3">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-border pb-3">
         <div>
           <p className={kicker}>Latihan</p>
           <h3 className="mt-0.5 font-display text-xl leading-tight text-ink">
@@ -74,18 +74,18 @@ export const InterviewPrepSection: React.FC = () => {
         </span>
       </div>
 
-      <p className="border-l-2 border-accent pl-4 font-display text-lg leading-relaxed text-ink">
+      <p className="border-2 border-border bg-explore px-4 py-4 font-display text-lg leading-relaxed text-explore-ink shadow-[4px_4px_0_var(--app-ink)]">
         &ldquo;{INTERVIEW_QUESTIONS[currentQuestionIndex]}&rdquo;
       </p>
 
-      <div className="flex flex-col gap-5 border-y border-rule py-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className={`flex flex-col gap-5 border-2 border-border p-4 shadow-[4px_4px_0_var(--app-ink)] sm:flex-row sm:items-end sm:justify-between ${isLow || isFinished ? 'bg-attention' : 'bg-accent'} text-accent-ink`}>
         <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
-            <span className="inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.08em] text-muted">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <span className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase text-accent-ink">
               <Clock className="h-3 w-3" />
               Sisa waktu
             </span>
-            <span className="font-mono text-[11px] text-muted">
+            <span className="font-mono text-[11px] text-accent-ink">
               {isRunning ? 'berjalan' : isFinished ? 'habis' : 'jeda'}
             </span>
           </div>
@@ -93,15 +93,13 @@ export const InterviewPrepSection: React.FC = () => {
           <div
             role="timer"
             aria-live="off"
-            className={`mt-1 font-mono text-4xl leading-none tracking-tight sm:text-5xl ${
-              isFinished ? 'text-danger' : isLow ? 'text-warning' : 'text-ink'
-            }`}
+            className="mt-1 font-mono text-4xl leading-none text-accent-ink sm:text-5xl"
           >
             {formatTime(timeLeft)}
           </div>
 
           <div
-            className="mt-2 h-0.5 w-full max-w-xs bg-rule"
+            className="mt-2 h-1 w-full max-w-xs bg-accent-ink/25"
             role="progressbar"
             aria-label="Sisa waktu latihan"
             aria-valuemin={0}
@@ -109,12 +107,12 @@ export const InterviewPrepSection: React.FC = () => {
             aria-valuenow={timeLeft}
           >
             <div
-              className={`h-0.5 ${isFinished ? 'bg-danger' : isLow ? 'bg-warning' : 'bg-accent'}`}
+              className="h-1 bg-accent-ink"
               style={{ width: `${(timeLeft / DEFAULT_TIME_SECONDS) * 100}%` }}
             />
           </div>
 
-          <p className="mt-2 text-[11px] leading-relaxed text-muted">
+          <p className="mt-2 text-[11px] leading-relaxed text-accent-ink">
             Jawab dengan suara, dua menit per soal. Timer berhenti sendiri saat waktu habis.
           </p>
         </div>
@@ -123,7 +121,7 @@ export const InterviewPrepSection: React.FC = () => {
           <button
             type="button"
             onClick={toggleStartPause}
-            className={`${isRunning ? buttonSecondary : buttonPrimary} min-h-11 px-3 text-xs`}
+            className={`${isRunning ? buttonSecondary : buttonPrimary} min-h-11 border-accent-ink bg-surface px-3 text-xs text-ink hover:bg-highlight`}
           >
             {isRunning ? (
               <>
@@ -141,7 +139,7 @@ export const InterviewPrepSection: React.FC = () => {
           <button
             type="button"
             onClick={handleReset}
-            className={`${buttonSecondary} min-h-11 px-3 text-xs`}
+            className={`${buttonSecondary} min-h-11 border-accent-ink bg-surface px-3 text-xs text-ink hover:bg-highlight`}
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>Reset</span>
@@ -150,7 +148,7 @@ export const InterviewPrepSection: React.FC = () => {
           <button
             type="button"
             onClick={handleNextQuestion}
-            className={`${buttonSecondary} min-h-11 px-3 text-xs`}
+            className={`${buttonSecondary} min-h-11 border-accent-ink bg-surface px-3 text-xs text-ink hover:bg-highlight`}
           >
             <span>Soal berikutnya</span>
             <SkipForward className="h-3.5 w-3.5" />

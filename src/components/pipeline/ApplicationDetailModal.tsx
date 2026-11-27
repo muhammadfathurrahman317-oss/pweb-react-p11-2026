@@ -20,7 +20,6 @@ import {
   ListChecks,
 } from '../common/Icons';
 import { ModalFrame } from '../common/ModalFrame';
-import { StatusStamp } from '../common/StatusStamp';
 import {
   buttonDanger,
   buttonGhost,
@@ -222,13 +221,15 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
       initialFocusRef={closeButtonRef}
       widthClass="max-w-4xl"
     >
-      <div className="border-b border-rule px-5 py-4 sm:px-6">
+      <div className="border-b-2 border-border bg-explore px-5 py-4 text-explore-ink sm:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={kicker}>Lembar lamaran</span>
-              <StatusStamp status={application.status} />
-              <span className="border border-rule px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.06em] text-muted">
+              <span className="font-mono text-[10px] font-semibold uppercase text-explore-ink">Detail lamaran</span>
+              <span className="inline-flex items-center border-2 border-explore-ink bg-surface px-2 py-0.5 font-mono text-[10px] font-semibold uppercase text-ink">
+                {STATUS_LABELS[application.status]}
+              </span>
+              <span className="border border-explore-ink px-1.5 py-0.5 font-mono text-[10px] uppercase text-explore-ink">
                 {application.workMode}
               </span>
               {application.salaryOffer && application.salaryOffer > 0 && (
@@ -240,13 +241,13 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
 
             <h2
               id={titleId}
-              className="mt-2 font-display text-2xl leading-tight text-ink sm:text-3xl"
+              className="mt-2 break-words font-display text-2xl leading-tight text-explore-ink sm:text-3xl"
             >
               {application.role}
             </h2>
 
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted">
-              <span className="inline-flex items-center gap-1 font-medium text-ink/80">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-explore-ink">
+              <span className="inline-flex items-center gap-1 font-semibold text-explore-ink">
                 <Briefcase className="h-3.5 w-3.5" />
                 {application.company}
               </span>
@@ -257,7 +258,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </span>
               )}
               {application.interviewDateTime && (
-                <span className="inline-flex items-center gap-1 text-accent">
+                <span className="inline-flex items-center gap-1 text-explore-ink">
                   <Clock className="h-3.5 w-3.5" />
                   <span className="font-mono">
                     {formatDisplayDateTime(application.interviewDateTime)}
@@ -284,7 +285,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               ref={closeButtonRef}
               onClick={onClose}
               aria-label="Tutup detail lamaran"
-              className="flex h-11 w-11 items-center justify-center text-muted transition-colors hover:bg-highlight hover:text-ink"
+              className="flex h-11 w-11 items-center justify-center text-explore-ink transition-colors hover:bg-explore-ink/10"
             >
               <X className="h-5 w-5" />
             </button>
@@ -295,7 +296,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
       <div
         role="tablist"
         aria-label="Bagian detail lamaran"
-        className="flex border-b border-rule px-5 sm:px-6"
+        className="grid grid-cols-2 border-b-2 border-border bg-paper px-3 py-2 sm:flex sm:px-6"
       >
         <button
           type="button"
@@ -304,10 +305,10 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           aria-selected={activeTab === 'workflow'}
           aria-controls={panelId}
           onClick={() => setActiveTab('workflow')}
-          className={`-mb-px mr-5 inline-flex min-h-11 items-center gap-2 border-b-2 text-xs font-medium transition-colors sm:text-sm ${
+          className={`flex min-h-11 min-w-0 items-center justify-center gap-2 border-2 px-2 text-center text-[11px] font-semibold transition-colors sm:mr-2 sm:px-3 sm:text-sm ${
             activeTab === 'workflow'
-              ? 'border-accent text-ink'
-              : 'border-transparent text-muted hover:text-ink'
+              ? 'border-border bg-accent text-accent-ink'
+              : 'border-transparent text-muted hover:border-border hover:bg-highlight hover:text-ink'
           }`}
         >
           <ListChecks className="h-4 w-4" />
@@ -320,10 +321,10 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
           aria-selected={activeTab === 'interview'}
           aria-controls={panelId}
           onClick={() => setActiveTab('interview')}
-          className={`-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 text-xs font-medium transition-colors sm:text-sm ${
+          className={`flex min-h-11 min-w-0 items-center justify-center gap-2 border-2 px-2 text-center text-[11px] font-semibold transition-colors sm:px-3 sm:text-sm ${
             activeTab === 'interview'
-              ? 'border-accent text-ink'
-              : 'border-transparent text-muted hover:text-ink'
+              ? 'border-border bg-explore text-explore-ink'
+              : 'border-transparent text-muted hover:border-border hover:bg-highlight hover:text-ink'
           }`}
         >
           <Clock className="h-4 w-4" />
@@ -335,17 +336,17 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
         role="tabpanel"
         id={panelId}
         aria-labelledby={activeTab === 'workflow' ? tabWorkflowId : tabInterviewId}
-        className="flex-1 overflow-y-auto p-5 sm:p-6"
+        className="min-h-0 flex-1 overflow-y-auto bg-paper p-4 sm:p-6"
       >
         {activeTab === 'interview' ? (
           <InterviewPrepSection />
         ) : (
           <div className="space-y-6">
-            <section className="border border-rule bg-surface">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule px-4 py-3">
-                <p className={kicker}>Tahap seleksi</p>
+            <section className="border-2 border-border bg-surface shadow-[4px_4px_0_var(--app-ink)]">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-border bg-explore px-4 py-3 text-explore-ink">
+                <p className="font-mono text-[10px] font-semibold uppercase text-explore-ink">Tahap seleksi</p>
                 {stageIndex === -1 && (
-                  <span className="text-[10px] text-muted">
+                  <span className="text-[10px] text-explore-ink">
                     Di luar jalur utama: {STATUS_LABELS[application.status]}
                   </span>
                 )}
@@ -360,14 +361,14 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     <div
                       key={stage}
                       aria-current={isCurrent ? 'step' : undefined}
-                      className={`border-r border-rule px-2 py-3 last:border-r-0 sm:px-3 ${
-                        isCurrent ? 'bg-highlight' : ''
+                      className={`min-w-0 border-r border-rule px-1 py-3 last:border-r-0 sm:px-3 ${
+                        isCurrent ? 'bg-accent text-accent-ink' : ''
                       }`}
                     >
                       <span
                         className={`font-mono text-[10px] ${
                           isCurrent
-                            ? 'text-accent'
+                            ? 'text-accent-ink'
                             : isPassed
                             ? 'text-success'
                             : 'text-muted'
@@ -377,13 +378,13 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                       </span>
                       <div
                         className={`mt-1 h-0.5 w-full ${
-                          isCurrent ? 'bg-accent' : isPassed ? 'bg-success' : 'bg-rule'
+                          isCurrent ? 'bg-accent-ink' : isPassed ? 'bg-success' : 'bg-rule'
                         }`}
                       />
                       <span
-                        className={`mt-2 block text-[10px] uppercase leading-tight tracking-[0.04em] ${
+                        className={`mt-2 block break-words text-[9px] uppercase leading-tight sm:text-[10px] ${
                           isCurrent
-                            ? 'text-ink'
+                            ? 'text-accent-ink'
                             : isPassed
                             ? 'text-ink/70'
                             : 'text-muted'
@@ -396,7 +397,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 })}
               </div>
 
-              <div className="border-t border-rule p-4">
+              <div className="border-t-2 border-border p-4">
                 {validNextStatuses.length === 0 ? (
                   <p className="text-xs leading-relaxed text-muted">
                     Status {STATUS_LABELS[application.status]} bersifat final. Tidak ada
@@ -415,13 +416,13 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                             setTransitionError(null);
                           }}
                           aria-pressed={selectedNextStatus === status}
-                          className={`min-h-11 border px-3 text-xs font-medium transition-colors ${
+                          className={`min-h-11 border-2 px-3 text-xs font-semibold transition-colors ${
                             selectedNextStatus === status
-                              ? 'border-accent bg-accent text-accent-ink'
+                              ? 'border-border bg-accent text-accent-ink'
                               : status === 'REJECTED'
-                              ? 'border-danger/40 text-danger hover:bg-danger/10'
+                              ? 'border-danger text-danger hover:bg-danger/10'
                               : status === 'GHOSTED'
-                              ? 'border-warning/60 text-warning hover:bg-warning/10'
+                              ? 'border-warning text-warning hover:bg-warning/10'
                               : 'border-border text-ink hover:bg-highlight'
                           }`}
                         >
@@ -431,7 +432,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                     </div>
 
                     {selectedNextStatus && (
-                      <div className="space-y-3 border border-rule bg-paper p-3.5">
+                      <div className="space-y-3 border-2 border-border bg-explore/25 p-3.5">
                         <p className={kicker}>
                           Syarat pindah ke {STATUS_LABELS[selectedNextStatus]}
                         </p>
@@ -518,7 +519,7 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                         {transitionError && (
                           <div
                             role="alert"
-                            className="flex items-start gap-2 border border-danger/40 px-3 py-2 text-xs leading-relaxed text-danger"
+                            className="flex items-start gap-2 border-2 border-danger bg-attention/50 px-3 py-2 text-xs leading-relaxed text-danger"
                           >
                             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                             <span>{transitionError}</span>
@@ -551,16 +552,16 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
               </div>
             </section>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <section className="space-y-3 md:border-r md:border-rule md:pr-6">
-                <div className="flex items-end justify-between gap-2 border-b border-rule pb-2">
+            <div className="grid gap-5 md:grid-cols-2">
+              <section className="min-w-0 space-y-3 border-2 border-border bg-surface p-4 shadow-[4px_4px_0_var(--app-ink)]">
+                <div className="-mx-4 -mt-4 flex items-end justify-between gap-2 border-b-2 border-border bg-accent px-4 py-3 text-accent-ink">
                   <div>
-                    <p className={kicker}>Persiapan</p>
-                    <h3 className="mt-0.5 font-display text-lg leading-tight text-ink">
+                    <p className="font-mono text-[10px] font-semibold uppercase text-accent-ink">Persiapan</p>
+                    <h3 className="mt-0.5 font-display text-lg leading-tight text-accent-ink">
                       Daftar persiapan
                     </h3>
                   </div>
-                  <span className="font-mono text-[11px] text-muted">
+                  <span className="font-mono text-[11px] text-accent-ink">
                     {completedCount}/{totalCount} · {progressPercent}%
                   </span>
                 </div>
@@ -638,23 +639,23 @@ export const ApplicationDetailModal: React.FC<ApplicationDetailModalProps> = ({
                 </form>
               </section>
 
-              <section className="space-y-3">
-                <div className="flex items-end justify-between gap-2 border-b border-rule pb-2">
+              <section className="min-w-0 space-y-3 border-2 border-border bg-surface p-4 shadow-[4px_4px_0_var(--app-ink)]">
+                <div className="-mx-4 -mt-4 flex items-end justify-between gap-2 border-b-2 border-border bg-explore px-4 py-3 text-explore-ink">
                   <div>
-                    <p className={kicker}>Riwayat</p>
-                    <h3 className="mt-0.5 font-display text-lg leading-tight text-ink">
+                    <p className="font-mono text-[10px] font-semibold uppercase text-explore-ink">Riwayat</p>
+                    <h3 className="mt-0.5 font-display text-lg leading-tight text-explore-ink">
                       Aktivitas
                     </h3>
                   </div>
-                  <span className="font-mono text-[11px] text-muted">
+                  <span className="font-mono text-[11px] text-explore-ink">
                     {application.activityLogs.length} entri
                   </span>
                 </div>
 
                 {application.activityLogs.length > 0 ? (
-                  <div className="max-h-64 overflow-y-auto border-t border-rule">
+                  <div className="max-h-64 overflow-y-auto border-t border-rule bg-explore/10">
                     {application.activityLogs.map((log) => (
-                      <div key={log.id} className="border-b border-rule py-2.5">
+                      <div key={log.id} className="border-b border-rule px-2 py-2.5">
                         <p className="font-mono text-[10px] text-muted">
                           {formatDisplayDateTime(log.timestamp)}
                         </p>

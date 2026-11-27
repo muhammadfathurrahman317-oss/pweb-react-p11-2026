@@ -68,8 +68,18 @@ export const isApplication = (value: unknown): value is Application =>
 
 export const isApplicationArray = (value: unknown): value is Application[] => {
   if (!Array.isArray(value) || !value.every(isApplication)) return false;
-  const ids = value.map((app: Application) => app.id);
-  return new Set(ids).size === ids.length;
+  const ids = new Set<string>();
+  const pairs = new Set<string>();
+  for (const app of value as Application[]) {
+    const pair = JSON.stringify([
+      app.company.trim().toLowerCase(),
+      app.role.trim().toLowerCase(),
+    ]);
+    if (ids.has(app.id) || pairs.has(pair)) return false;
+    ids.add(app.id);
+    pairs.add(pair);
+  }
+  return true;
 };
 
 export const isStringArray = (value: unknown): value is string[] =>
